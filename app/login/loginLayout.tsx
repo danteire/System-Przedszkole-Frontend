@@ -5,7 +5,7 @@ import { useNavigate } from "react-router";
 
 interface LoginState {
   password: string;
-  username: string;
+  email: string;
   isLoading: boolean;
   error: string;
   isLoggedIn: boolean;
@@ -38,7 +38,7 @@ const loginReducer = (state: LoginState, action: LoginAction): LoginState => {
         ...state,
         isLoading: false,
         isLoggedIn: false,
-        username: "",
+        email: "",
         password: "",
         error: "Incorrect username or password!"
       };
@@ -56,7 +56,7 @@ const loginReducer = (state: LoginState, action: LoginAction): LoginState => {
 
 const initialState: LoginState = {
   password: "",
-  username: "",
+  email: "",
   isLoading: false,
   error: "",
   isLoggedIn: false
@@ -64,7 +64,7 @@ const initialState: LoginState = {
 
 export default function Login() {
   const [state, dispatch] = React.useReducer(loginReducer, initialState);
-  const { username, password, isLoading, error, isLoggedIn } = state;
+  const { email, password, isLoading, error, isLoggedIn } = state;
 
   const navigate = useNavigate(); // <--- hook w komponencie
 
@@ -73,7 +73,7 @@ export default function Login() {
     dispatch({ type: "login" });
 
     try {
-      const data = await login({ username, password }); // wysyłamy dane do serwera
+      const data = await login({ email, password }); // wysyłamy dane do serwera
       localStorage.setItem("token", data.token);        // zapis tokenu
       dispatch({ type: "success" });
       navigate("/dashboard", { replace: true });        // przekierowanie
@@ -87,7 +87,7 @@ export default function Login() {
       <div className="login-container">
         {isLoggedIn ? (
           <>
-            <p>{`Hello ${username}`}</p>
+            <p>{`Hello ${email}`}</p>
             <button type="button" onClick={() => dispatch({ type: "logout" })}>
               Log out
             </button>
@@ -98,12 +98,12 @@ export default function Login() {
             <p> PLease Login!</p>
             <input
               type="text"
-              placeholder="username"
-              value={username}
+              placeholder="email"
+              value={email}
               onChange={(e) =>
                 dispatch({
                   type: "field",
-                  fieldName: "username",
+                  fieldName: "email",
                   payload: e.currentTarget.value
                 })
               }
