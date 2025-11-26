@@ -1,32 +1,28 @@
-import { Container, Nav, Navbar, NavDropdown } from "react-bootstrap";
+import { Button, Container, Nav, Navbar, NavDropdown } from "react-bootstrap";
+import { Link, redirect } from "react-router";
 
 export async function loader() {
   return {};
 }
 
+function logoutAction(){
+    localStorage.clear();
+    return redirect("/");
+}
 export default function DashBoard() {
-    return (
+  return (
     <Navbar expand="lg" className="bg-body-tertiary">
       <Container>
-        <Navbar.Brand href="#home">Przedszkole +</Navbar.Brand>
+        <Navbar.Brand as={Link} to="/dashboard">Przedszkole +</Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">
-            <Nav.Link href="#home">Attendence</Nav.Link>
-            <Nav.Link href="#link">Groups</Nav.Link>
-            {/* <NavDropdown title="Dropdown" id="basic-nav-dropdown">
-              <NavDropdown.Item href="#action/3.1">Action</NavDropdown.Item>
-              <NavDropdown.Item href="#action/3.2">
-                Another action
-              </NavDropdown.Item>
-              <NavDropdown.Item href="#action/3.3">Something</NavDropdown.Item>
-              <NavDropdown.Divider />
-              <NavDropdown.Item href="#action/3.4">
-                Separated link
-              </NavDropdown.Item>
-            </NavDropdown> */}
-            <Nav.Link href="#link">Meals</Nav.Link>
-            <Nav.Link href="#link">Messages</Nav.Link>
+            <Nav.Link as={Link} to="/attendance">Attendance</Nav.Link>
+            <Nav.Link as={Link} to="/groups">Groups</Nav.Link>
+            <Nav.Link as={Link} to="/meals">Meals</Nav.Link>
+            <Nav.Link as={Link} to="/messages">Messages</Nav.Link>
+            <Nav.Link as={Link} to="/events">Events</Nav.Link>
+            <Nav.Item as={Button} onClick={logoutAction}> Logout </Nav.Item>
           </Nav>
         </Navbar.Collapse>
       </Container>
