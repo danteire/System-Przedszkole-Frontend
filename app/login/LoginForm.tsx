@@ -6,7 +6,6 @@ interface LoginState {
   password: string;
   email: string;
   error: string;
-  isLoggedin: boolean;
 }
 
 type LoginAction =

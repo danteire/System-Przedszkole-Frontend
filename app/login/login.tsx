@@ -1,31 +1,11 @@
+// app/routes/login/login.tsx
 import { redirect, type ActionFunctionArgs } from "react-router";
 import LoginForm from "./LoginForm";
+import { api } from "../utils/serviceAPI";
 
-// Funkcja logowania
-export const login = async (creds: {
-  email: string;
-  password: string;
-}): Promise<{ token: string }> => {
-  const response = await fetch("http://3.71.11.3:8080/api/auth/login", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(creds),
-  });
-
-  if (!response.ok) {
-    throw new Error("Nieprawidłowe dane logowania");
-  }
-
-  const data = await response.json();
-  return data;
-};
-
-// clientLoader - wykonuje się TYLKO w przeglądarce
+// clientLoader - sprawdza czy użytkownik jest już zalogowany
 export async function clientLoader() {
-  const token = localStorage.getItem('token');
-  if (token) {
+  if (api.isAuthenticated()) {
     throw redirect('/dashboard');
   }
   return {};
@@ -38,8 +18,8 @@ export async function action({ request }: ActionFunctionArgs) {
   const password = formData.get("password") as string;
 
   try {
-    const { token } = await login({ email, password });
-    localStorage.setItem("token", token);
+    // api.login automatycznie zapisze tokeny do localStorage
+    await api.login({ email, password });
     return redirect("/dashboard");
   } catch (error) {
     return { error: "Nieprawidłowe dane logowania" };

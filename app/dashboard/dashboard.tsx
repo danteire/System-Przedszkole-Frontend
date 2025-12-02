@@ -1,14 +1,19 @@
 import { Button, Container, Nav, Navbar, NavDropdown } from "react-bootstrap";
 import { Link, redirect } from "react-router";
+import {api} from "../utils/serviceAPI"
 
 export async function loader() {
   return {};
 }
 
-function logoutAction(){
-    localStorage.clear();
-    return redirect("/");
-}
+const handleLogout = async () => {
+    try {
+      await api.logout(); // Automatycznie czyści token i przekierowuje
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
 export default function DashBoard() {
   return (
     <Navbar expand="lg" className="bg-body-tertiary">
@@ -22,7 +27,7 @@ export default function DashBoard() {
             <Nav.Link as={Link} to="/meals">Meals</Nav.Link>
             <Nav.Link as={Link} to="/messages">Messages</Nav.Link>
             <Nav.Link as={Link} to="/events">Events</Nav.Link>
-            <Nav.Item as={Button} onClick={logoutAction}> Logout </Nav.Item>
+            <Nav.Item as={Button} onClick={handleLogout}> Logout </Nav.Item>
           </Nav>
         </Navbar.Collapse>
       </Container>
