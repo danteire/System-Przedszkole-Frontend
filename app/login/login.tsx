@@ -20,7 +20,7 @@ export async function action({ request }: ActionFunctionArgs) {
   try {
     // api.login automatycznie zapisze tokeny do localStorage
     await api.login({ email, password });
-    return redirect("/dashboard");
+    return redirect("/home");
   } catch (error) {
     return { error: "Nieprawidłowe dane logowania" };
   }

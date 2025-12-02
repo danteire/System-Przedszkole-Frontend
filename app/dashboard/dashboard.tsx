@@ -18,7 +18,7 @@ export default function DashBoard() {
   return (
     <Navbar expand="lg" className="bg-body-tertiary">
       <Container>
-        <Navbar.Brand as={Link} to="/dashboard">Przedszkole +</Navbar.Brand>
+        <Navbar.Brand as={Link} to="/home">Przedszkole +</Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
         <Navbar.Collapse id="basic-navbar-nav">
           <Nav className="me-auto">

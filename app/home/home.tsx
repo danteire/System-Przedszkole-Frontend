@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { replace, Route, useNavigate } from "react-router";
+import DashBoard from "~/dashboard/dashboard";
 
 export function loader() {
   return null;
@@ -7,8 +8,7 @@ export function loader() {
 
 
 export default function HomePage() {
-    const navigate = useNavigate();
-    useEffect(() =>{
-        navigate("/login", {replace: true});
-    }, [navigate]);
+    return(
+      <DashBoard></DashBoard>
+    );
 }

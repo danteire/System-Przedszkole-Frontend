@@ -410,7 +410,7 @@ class ApiClient {
       this.clearToken();
       
       if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+        window.location.href = '/';
       }
       
       console.log('✅ Logged out');
