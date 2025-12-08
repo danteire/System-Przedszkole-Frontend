@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { replace, Route, useNavigate } from "react-router";
-import DashBoard from "~/dashboard/dashboard";
+import DashBoard from "~/commons/dashboard";
 
 export function loader() {
   return null;

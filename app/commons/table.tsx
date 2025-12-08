@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
 
+{
+  "firstName":"Jan"
+  "lastName":"Kowalski"
+  "parentId": 1
+}
+
+interface Student{
+  firstName: String;
+  lastName: String;
+  parentID: number;
+}
+
 const PaginatedTable = () => {
-  const data = [
-    { id: 1, name: 'Amit Sharma', age: 28, job: 'Software Developer' },
-    { id: 2, name: 'Priya Singh', age: 34, job: 'Product Manager' },
-    { id: 3, name: 'Ravi Kumar', age: 23, job: 'UI/UX Designer' },
-    { id: 4, name: 'Anjali Patel', age: 45, job: 'Project Manager' },
-    { id: 5, name: 'Vikram Yadav', age: 40, job: 'Engineer' },
-    { id: 6, name: 'Neha Gupta', age: 32, job: 'Data Scientist' },
-    { id: 7, name: 'Suresh Reddy', age: 38, job: 'Scientist' },
-    { id: 8, name: 'Pooja Desai', age: 35, job: 'Architect' },
-    { id: 9, name: 'Rahul Mehta', age: 29, job: 'Manager' },
-    { id: 10, name: 'Sonia Kapoor', age: 31, job: 'HR Specialist' },
-  ];
+  const preschoolerData = api.get("");
   const itemsPerPage = 5;
   const [currentPage, setCurrentPage] = useState(1);
 
