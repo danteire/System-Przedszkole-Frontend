@@ -177,21 +177,6 @@ class ApiClient {
     this.failedQueue = [];
   }
 
-  // ============================================
-  // GŁÓWNY REQUEST Z INTERCEPTOREM
-  // ============================================
-
-  /**
-   * Główna metoda request z automatycznym odświeżaniem tokenu przy 401
-   * 
-   * FLOW:
-   * 1. Wyślij request z accessToken
-   * 2. Jeśli 401:
-   *    a) Jeśli refresh nie jest w toku - rozpocznij refresh
-   *    b) Jeśli refresh jest w toku - dodaj do kolejki
-   * 3. Po otrzymaniu nowego tokenu - ponów request
-   * 4. Zwróć wynik
-   */
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
