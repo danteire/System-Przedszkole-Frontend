@@ -2,7 +2,6 @@
 
 interface TokenResponse {
   accessToken: string;
-  // refreshToken jest w httpOnly cookie, nie jest zwracany w response
 }
 
 interface ApiError {
@@ -25,10 +24,10 @@ class ApiClient {
     this.loadTokenFromStorage();
   }
 
-
   private loadTokenFromStorage(): void {
     if (typeof window !== 'undefined') {
       this.accessToken = localStorage.getItem('accessToken');
+      console.log('📥 Loaded token from storage:', this.accessToken ? 'Token exists' : 'No token found');
     }
   }
 
@@ -37,6 +36,7 @@ class ApiClient {
     
     if (typeof window !== 'undefined') {
       localStorage.setItem('accessToken', accessToken);
+      console.log('💾 Token saved to storage: ', this.accessToken);
     }
   }
 
@@ -45,20 +45,19 @@ class ApiClient {
     
     if (typeof window !== 'undefined') {
       localStorage.removeItem('accessToken');
+      console.log('🗑️ Token cleared from storage');
     }
   }
-
 
   private async logErrorResponse(response: Response, endpoint: string, method: string): Promise<void> {
     let errorData: any = null;
 
     try {
-      // Spróbuj sparsować JSON z błędem
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
-        errorData = await response.json();
+        errorData = await response.clone().json(); 
       } else {
-        errorData = await response.text();
+        errorData = await response.clone().text();
       }
     } catch (e) {
       errorData = 'Could not parse error response';
@@ -72,18 +71,15 @@ class ApiClient {
     console.groupEnd();
   }
 
-  /**
-   * Tworzy szczegółowy obiekt błędu
-   */
   private async createError(response: Response, endpoint: string, method: string): Promise<ApiError> {
     let errorData: any = null;
 
     try {
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
-        errorData = await response.json();
+        errorData = await response.clone().json(); // ← clone()
       } else {
-        errorData = await response.text();
+        errorData = await response.clone().text();
       }
     } catch (e) {
       errorData = null;
@@ -121,11 +117,13 @@ class ApiClient {
     // Dodaj Authorization Bearer token
     if (this.accessToken) {
       headers['Authorization'] = `Bearer ${this.accessToken}`;
+      console.log('🔐 Added Authorization header with token');
+    } else {
+      console.warn('⚠️ No access token available for Authorization header');
     }
 
     return headers;
   }
-
 
   private async refreshAccessToken(): Promise<string> {
     console.log('🔄 Refreshing access token...');
@@ -140,7 +138,6 @@ class ApiClient {
       });
 
       if (!response.ok) {
-        // Loguj błąd refresh
         await this.logErrorResponse(response, '/auth/refresh', 'POST');
         throw new Error('Failed to refresh token');
       }
@@ -186,20 +183,18 @@ class ApiClient {
     const method = options.method || 'GET';
 
     console.log(`📤 Request: ${method} ${endpoint}`);
+    console.log('📋 Request headers:', headers);
 
     try {
-      // 1. PIERWSZY REQUEST
       let response = await fetch(url, {
         ...options,
         headers,
         credentials: 'include',
       });
 
-      // 2. INTERCEPTOR - Sprawdź czy 401 (Unauthorized)
       if (response.status === 401) {
         console.log('⚠️ 401 Unauthorized - Token expired');
 
-        // 2a. Jeśli refresh NIE jest w toku - rozpocznij refresh
         if (!this.isRefreshing) {
           this.isRefreshing = true;
 
@@ -210,7 +205,6 @@ class ApiClient {
             
             this.processQueue(null, newAccessToken);
 
-            // 3. PONÓW REQUEST z nowym tokenem
             console.log(`🔄 Retrying request: ${method} ${endpoint}`);
             
             const newHeaders = this.getHeaders(options.headers);
@@ -225,9 +219,7 @@ class ApiClient {
             this.processQueue(refreshError, null);
             throw refreshError;
           }
-        } 
-        // 2b. Jeśli refresh JUŻ jest w toku - dodaj do kolejki
-        else {
+        } else {
           console.log('⏳ Waiting for token refresh...');
 
           const newAccessToken = await new Promise<string>((resolve, reject) => {
@@ -245,7 +237,6 @@ class ApiClient {
         }
       }
 
-      // 4. JEŚLI NADAL 401 - Wyloguj użytkownika
       if (response.status === 401) {
         console.error('❌ Still 401 after refresh - Logging out');
         await this.logErrorResponse(response, endpoint, method);
@@ -259,20 +250,14 @@ class ApiClient {
         throw new Error('Unauthorized');
       }
 
-      // 5. OBSŁUGA INNYCH BŁĘDÓW (wszystkie kody != 2xx)
       if (!response.ok) {
-        // Loguj szczegóły błędu
         await this.logErrorResponse(response, endpoint, method);
-        
-        // Stwórz obiekt błędu
         const error = await this.createError(response, endpoint, method);
         throw error;
       }
 
-      // 6. ZWRÓĆ WYNIK
       console.log(`✅ Response: ${method} ${endpoint} - ${response.status}`);
       
-      // Sprawdź czy response ma body
       const contentLength = response.headers.get('content-length');
       if (contentLength === '0' || response.status === 204) {
         return {} as T;
@@ -281,7 +266,6 @@ class ApiClient {
       return response.json();
 
     } catch (error) {
-      // Loguj błędy sieciowe (timeout, brak połączenia, itp.)
       if (error instanceof TypeError) {
         console.group('❌ Network Error');
         console.error('Endpoint:', `${method} ${endpoint}`);
@@ -336,7 +320,6 @@ class ApiClient {
     });
   }
 
-  
   async login(credentials: { email: string; password: string }): Promise<TokenResponse> {
     console.log('🔐 Logging in...');
 
@@ -351,9 +334,7 @@ class ApiClient {
       });
 
       if (!response.ok) {
-        // Loguj błąd logowania
         await this.logErrorResponse(response, '/auth/login', 'POST');
-        
         const error = await this.createError(response, '/auth/login', 'POST');
         throw error;
       }
@@ -361,8 +342,7 @@ class ApiClient {
       const data: TokenResponse = await response.json();
       
       this.saveToken(data.accessToken);
-      
-      console.log('✅ Login successful');
+      console.log('✅ Login successful - Token saved');
       
       return data;
     } catch (error) {
@@ -371,7 +351,6 @@ class ApiClient {
     }
   }
 
-  
   async logout(): Promise<void> {
     console.log('🚪 Logging out...');
 
@@ -386,7 +365,6 @@ class ApiClient {
       });
 
       if (!response.ok) {
-        // Loguj błąd wylogowania (ale i tak wyloguj użytkownika)
         await this.logErrorResponse(response, '/auth/logout', 'POST');
       }
     } catch (error) {
@@ -402,20 +380,16 @@ class ApiClient {
     }
   }
 
-  /**
-   * Sprawdza czy użytkownik jest zalogowany
-   */
   isAuthenticated(): boolean {
-    return !!this.accessToken;
+    const isAuth = !!this.accessToken;
+    console.log('🔍 isAuthenticated:', isAuth);
+    return isAuth;
   }
 
-  /**
-   * Pobiera aktualny access token
-   */
   getAccessToken(): string | null {
+    console.log('🔑 Current access token:', this.accessToken ? 'Token exists' : 'No token');
     return this.accessToken;
   }
 }
 
-// Singleton - jedna instancja dla całej aplikacji
 export const api = new ApiClient('https://przedszkoleplus.mywire.org/api');

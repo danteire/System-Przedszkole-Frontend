@@ -1,33 +1,55 @@
-import { Button, Container, Nav, Navbar, NavDropdown } from "react-bootstrap";
-import { Link, redirect } from "react-router";
-import {api} from "../utils/serviceAPI"
+import { Button, Container, Nav, Navbar } from "react-bootstrap";
+import { Link } from "react-router";
+import { api } from "../utils/serviceAPI";
+import styles from "./DashBoard.module.css";
 
 export async function loader() {
   return {};
 }
 
 const handleLogout = async () => {
-    try {
-      await api.logout(); // Automatycznie czyści token i przekierowuje
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
+  try {
+    await api.logout();
+  } catch (error) {
+    console.error("Logout failed:", error);
+  }
+};
 
 export default function DashBoard() {
   return (
-    <Navbar expand="lg" className="bg-body-tertiary">
+    <Navbar expand="lg" className={styles.navbar}>
       <Container>
-        <Navbar.Brand as={Link} to="/home">Przedszkole +</Navbar.Brand>
+        <Navbar.Brand as={Link} to="/home" className={styles.brand}>
+          Przedszkole +
+        </Navbar.Brand>
+
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
+
         <Navbar.Collapse id="basic-navbar-nav">
-          <Nav className="me-auto">
-            <Nav.Link as={Link} to="/attendance">Attendance</Nav.Link>
-            <Nav.Link as={Link} to="/groups">Groups</Nav.Link>
-            <Nav.Link as={Link} to="/meals">Meals</Nav.Link>
-            <Nav.Link as={Link} to="/messages">Messages</Nav.Link>
-            <Nav.Link as={Link} to="/events">Events</Nav.Link>
-            <Nav.Item as={Button} onClick={handleLogout}> Logout </Nav.Item>
+          <Nav className={styles.nav}>
+            <Nav.Link as={Link} to="/attendance" className={styles.link}>
+              Attendance
+            </Nav.Link>
+
+            <Nav.Link as={Link} to="/groups" className={styles.link}>
+              Groups
+            </Nav.Link>
+
+            <Nav.Link as={Link} to="/meals" className={styles.link}>
+              Meals
+            </Nav.Link>
+
+            <Nav.Link as={Link} to="/messages" className={styles.link}>
+              Messages
+            </Nav.Link>
+
+            <Nav.Link as={Link} to="/events" className={styles.link}>
+              Events
+            </Nav.Link>
+
+            <button className={styles.logout} onClick={handleLogout}>
+              Logout
+            </button>
           </Nav>
         </Navbar.Collapse>
       </Container>
