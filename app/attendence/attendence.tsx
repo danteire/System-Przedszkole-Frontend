@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { Table } from "react-bootstrap";
 import { replace, Route, useNavigate } from "react-router";
 import DashBoard from "~/commons/dashboard";
-import PaginatedTable from "~/commons/table";
+import AttendanceTable from "./attendenceTable";
 
 
 export function clientLoader() {
@@ -17,7 +17,7 @@ export default function AttendancePage() {
       </div>
 
       <div className="w-full px-4">
-        <PaginatedTable />
+        <AttendanceTable />
       </div>
     </>
   );

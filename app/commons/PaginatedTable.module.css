@@ -65,3 +65,23 @@
   font-size: 14px;
   color: #444;
 }
+
+.NewGroupButton {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+  background-color: #3182ce;
+  border: none;
+  padding: 10px 20px;
+  font-size: 1rem;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}

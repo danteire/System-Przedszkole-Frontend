@@ -155,7 +155,7 @@ class ApiClient {
       this.clearToken();
       
       if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+        window.location.href = '/home';
       }
       
       throw error;
@@ -192,8 +192,8 @@ class ApiClient {
         credentials: 'include',
       });
 
-      if (response.status === 401) {
-        console.log('⚠️ 401 Unauthorized - Token expired');
+      if (response.status === 403) {
+        console.log('⚠️ 403 Unauthorized - Token expired');
 
         if (!this.isRefreshing) {
           this.isRefreshing = true;
@@ -237,14 +237,14 @@ class ApiClient {
         }
       }
 
-      if (response.status === 401) {
-        console.error('❌ Still 401 after refresh - Logging out');
+      if (response.status === 403) {
+        console.error('❌ Still 403 after refresh - Logging out');
         await this.logErrorResponse(response, endpoint, method);
         
         this.clearToken();
         
         if (typeof window !== 'undefined') {
-          window.location.href = '/login';
+          window.location.href = '/home';
         }
         
         throw new Error('Unauthorized');
