@@ -1,71 +1,142 @@
 import React, { useState } from 'react';
+import { api } from '../utils/serviceAPI';
+import styles from '../commons/PaginatedTable.module.css';
+
+interface Student {
+  id: number;
+  firstName: string;
+  lastName: string;
+  parentId: number;
+  groupId: number | null;
+}
 
 const PaginatedTable = () => {
-  const data = [
-    { id: 1, name: 'Amit Sharma', age: 28, job: 'Software Developer' },
-    { id: 2, name: 'Priya Singh', age: 34, job: 'Product Manager' },
-    { id: 3, name: 'Ravi Kumar', age: 23, job: 'UI/UX Designer' },
-    { id: 4, name: 'Anjali Patel', age: 45, job: 'Project Manager' },
-    { id: 5, name: 'Vikram Yadav', age: 40, job: 'Engineer' },
-    { id: 6, name: 'Neha Gupta', age: 32, job: 'Data Scientist' },
-    { id: 7, name: 'Suresh Reddy', age: 38, job: 'Scientist' },
-    { id: 8, name: 'Pooja Desai', age: 35, job: 'Architect' },
-    { id: 9, name: 'Rahul Mehta', age: 29, job: 'Manager' },
-    { id: 10, name: 'Sonia Kapoor', age: 31, job: 'HR Specialist' },
-  ];
-  const itemsPerPage = 5;
+  const [preschoolerData, setPreschoolerData] = useState<Student[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+
+  const itemsPerPage = 5;
+
+  React.useEffect(() => {
+    const fetchPreschoolers = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await api.get<Student[]>("/preschoolers");
+        const fetchedData = response;
+
+        if (Array.isArray(fetchedData)) {
+          setPreschoolerData(fetchedData);
+        } else {
+          setError('Nieprawidłowy format danych z serwera.');
+          setPreschoolerData([]);
+        }
+      } catch (err: any) {
+        setError(err.message || 'Nie udało się załadować danych');
+        setPreschoolerData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPreschoolers();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className={styles.wrapper}>
+        <div style={{ height: "80px", display: "flex", justifyContent: "center", alignItems: "center" }}>
+          Ładowanie danych...
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.wrapper}>
+        <div style={{ textAlign: "center" }}>
+          <div style={{ color: "red", marginBottom: "1rem" }}>❌ Błąd: {error}</div>
+          <button onClick={() => window.location.reload()} className={styles.button}>
+            Spróbuj ponownie
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const totalPages = Math.ceil(preschoolerData.length / itemsPerPage);
+
+  if (currentPage > totalPages && totalPages > 0) {
+    setCurrentPage(totalPages);
+  }
 
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = preschoolerData.slice(indexOfFirstItem, indexOfLastItem);
 
-  const currentItems = data.slice(indexOfFirstItem, indexOfLastItem);
-
-  const handlePageChange = (page: any) => {
-    setCurrentPage(page);
-  };
+  if (preschoolerData.length === 0) {
+    return (
+      <div className={styles.wrapper}>
+        <div style={{ height: "80px", display: "flex", justifyContent: "center", alignItems: "center" }}>
+          Brak danych do wyświetlenia
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-4xl mx-auto my-8 p-4 shadow-lg rounded-lg bg-white">
-      <table className="table-auto w-full text-left border-collapse border border-gray-300">
-        <thead className="bg-blue-100">
+    <div className={styles.wrapper}>
+      <h2 className={styles.title}>
+        Lista Przedszkolaków ({preschoolerData.length})
+      </h2>
+
+      <table className={styles.table}>
+        <thead>
           <tr>
-            <th className="px-6 py-3 font-medium text-gray-700">ID</th>
-            <th className="px-6 py-3 font-medium text-gray-700">Name</th>
-            <th className="px-6 py-3 font-medium text-gray-700">Age</th>
-            <th className="px-6 py-3 font-medium text-gray-700">Job</th>
+            <th>ID</th>
+            <th>Imię</th>
+            <th>Nazwisko</th>
+            <th>ID Rodzica</th>
+            <th>Grupa</th>
           </tr>
         </thead>
         <tbody>
-          {currentItems.map((person) => (
-            <tr key={person.id} className="border-b hover:bg-gray-50">
-              <td className="px-6 py-3">{person.id}</td>
-              <td className="px-6 py-3">{person.name}</td>
-              <td className="px-6 py-3">{person.age}</td>
-              <td className="px-6 py-3">{person.job}</td>
+          {currentItems.map((student: Student) => (
+            <tr key={student.id} className={styles.row}>
+              <td>{student.id}</td>
+              <td>{student.firstName}</td>
+              <td>{student.lastName}</td>
+              <td>{student.parentId}</td>
+              <td>
+                {student.groupId ?? <span style={{ color: "#999", fontStyle: "italic" }}>Brak</span>}
+              </td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      {/* Pagination Controls */}
-      <div className="mt-4 flex justify-between items-center">
+      <div className={styles.pagination}>
         <button
-          onClick={() => handlePageChange(currentPage - 1)}
+          onClick={() => setCurrentPage(currentPage - 1)}
           disabled={currentPage === 1}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-700 disabled:opacity-50"
+          className={styles.button}
         >
-          Previous
+          Poprzednia
         </button>
-        <div className="text-gray-700">
-          Page {currentPage} of {Math.ceil(data.length / itemsPerPage)}
+
+        <div className={styles.pageInfo}>
+          Strona {currentPage} z {totalPages}
         </div>
+
         <button
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === Math.ceil(data.length / itemsPerPage)}
-          className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-700 disabled:opacity-50"
+          onClick={() => setCurrentPage(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className={styles.button}
         >
-          Next
+          Następna
         </button>
       </div>
     </div>

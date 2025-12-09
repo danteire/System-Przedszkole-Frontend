@@ -7,11 +7,10 @@ import {
 
 export default [
   route("/", "layouts/testlayout.tsx", [
-    index("home/home.tsx"),
-    route("dashboard", "dashboard/dashboard.tsx"),
-    route("login", "login/loginLayout.tsx", [index("login/login.tsx")]),
+    index("login/login.tsx"),
     route("groups", "groups/groups.tsx"),
-    route("attendence", "attendence/attendence.tsx"),
+    route("home","home/home.tsx"),
+    route("attendance", "attendence/attendence.tsx"),
     route("meals", "meals/meals.tsx"),
     route("messages", "messages/messages.tsx"),
     route("events", "events/events.tsx"),
