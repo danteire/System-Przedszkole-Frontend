@@ -1,6 +1,6 @@
 import * as React from "react";
 import { Form, useActionData, useNavigation } from "react-router";
-import "../app.css";
+import "./loginForm.css";
 
 interface LoginState {
   password: string;
@@ -14,20 +14,17 @@ type LoginAction =
 
 const loginReducer = (state: LoginState, action: LoginAction): LoginState => {
   switch (action.type) {
-    case "field": {
-      return {
-        ...state,
-        [action.fieldName]: action.payload
-      };
-    }
-    case "error": {
+    case "field":
+      return { ...state, [action.fieldName]: action.payload };
+
+    case "error":
       return {
         ...state,
         email: "",
         password: "",
         error: "Incorrect username or password!"
       };
-    }
+
     default:
       return state;
   }
@@ -42,22 +39,25 @@ const initialState: LoginState = {
 export default function LoginForm() {
   const [state, dispatch] = React.useReducer(loginReducer, initialState);
   const { email, password, error } = state;
-  
+
   const actionData = useActionData<{ error?: string }>();
   const navigation = useNavigation();
   const isLoading = navigation.state === "submitting";
 
   return (
-    <div className="App">
+    <div className="app-login">
       <div className="login-container">
-        <Form method="post" className="form">
+        <Form method="post">
           {(actionData?.error || error) && (
-            <p className="error">{actionData?.error || error}</p>
+            <p className="login-error">{actionData?.error || error}</p>
           )}
+
           <p>Please Login!</p>
+
           <input
             type="text"
             name="email"
+            className="login-form-input"
             placeholder="email"
             value={email}
             onChange={(e) =>
@@ -68,9 +68,11 @@ export default function LoginForm() {
               })
             }
           />
+
           <input
             type="password"
             name="password"
+            className="login-form-input"
             placeholder="password"
             autoComplete="new-password"
             value={password}
@@ -82,8 +84,13 @@ export default function LoginForm() {
               })
             }
           />
-          <button type="submit" className="submit" disabled={isLoading}>
-            {isLoading ? "Logging in....." : "Login"}
+
+          <button
+            type="submit"
+            className="login-submit-btn"
+            disabled={isLoading}
+          >
+            {isLoading ? "Logging in..." : "Login"}
           </button>
         </Form>
       </div>

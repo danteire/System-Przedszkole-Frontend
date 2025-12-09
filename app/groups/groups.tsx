@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { replace, Route, useNavigate } from "react-router";
-import DashBoard from "~/dashboard/dashboard";
+import DashBoard from "~/commons/dashboard";
+import PaginatedTable from "~/commons/table";
 
 export function loader() {
   return null;
@@ -9,6 +10,6 @@ export function loader() {
 
 export default function GroupsPage() {
     return(
-      <DashBoard></DashBoard>
+      <><DashBoard></DashBoard><PaginatedTable></PaginatedTable></>
     );
 }
