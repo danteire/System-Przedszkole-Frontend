@@ -1,7 +1,15 @@
 // utils/ApiClient.ts
+interface AccountInfo {
+  id: number;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  accountType: string;
+}
 
 interface TokenResponse {
   accessToken: string;
+  account: AccountInfo;
 }
 
 interface ApiError {
@@ -13,6 +21,7 @@ interface ApiError {
 class ApiClient {
   private baseUrl: string;
   private accessToken: string | null = null;
+  private accountInfo: AccountInfo | null = null; // ← Przechowuj w pamięci
   private isRefreshing: boolean = false;
   private failedQueue: Array<{
     resolve: (value: string) => void;
@@ -21,13 +30,35 @@ class ApiClient {
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
-    this.loadTokenFromStorage();
+    this.loadFromStorage(); // ← Załaduj WSZYSTKO przy starcie
   }
 
-  private loadTokenFromStorage(): void {
+  // ============================================
+  // ZARZĄDZANIE TOKENEM I KONTEM
+  // ============================================
+
+  /**
+   * Ładuje token i informacje o koncie z localStorage
+   */
+  private loadFromStorage(): void {
     if (typeof window !== 'undefined') {
+      // Załaduj token
       this.accessToken = localStorage.getItem('accessToken');
       console.log('📥 Loaded token from storage:', this.accessToken ? 'Token exists' : 'No token found');
+      
+      // Załaduj informacje o koncie
+      const accountJson = localStorage.getItem('account');
+      if (accountJson) {
+        try {
+          this.accountInfo = JSON.parse(accountJson);
+          console.log('📥 Loaded account info:', this.accountInfo);
+        } catch (error) {
+          console.error('❌ Failed to parse account info:', error);
+          this.accountInfo = null;
+        }
+      } else {
+        console.log('📥 No account info found in storage');
+      }
     }
   }
 
@@ -36,7 +67,7 @@ class ApiClient {
     
     if (typeof window !== 'undefined') {
       localStorage.setItem('accessToken', accessToken);
-      console.log('💾 Token saved to storage: ', this.accessToken);
+      console.log('💾 Token saved to storage');
     }
   }
 
@@ -49,13 +80,45 @@ class ApiClient {
     }
   }
 
+  /**
+   * Zapisuje informacje o koncie
+   */
+  private saveAccountInfo(accountInfo: AccountInfo): void {
+    this.accountInfo = accountInfo; // ← Zapisz w pamięci
+    
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('account', JSON.stringify(accountInfo));
+      console.log('💾 Account info saved:', {
+        email: accountInfo.email,
+        accountType: accountInfo.accountType,
+        id: accountInfo.id
+      });
+    }
+  }
+
+  /**
+   * Czyści informacje o koncie
+   */
+  private clearAccountInfo(): void {
+    this.accountInfo = null; // ← Wyczyść z pamięci
+    
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('account');
+      console.log('🗑️ Account info cleared from storage');
+    }
+  }
+
+  // ============================================
+  // OBSŁUGA BŁĘDÓW
+  // ============================================
+
   private async logErrorResponse(response: Response, endpoint: string, method: string): Promise<void> {
     let errorData: any = null;
 
     try {
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
-        errorData = await response.clone().json(); 
+        errorData = await response.clone().json();
       } else {
         errorData = await response.clone().text();
       }
@@ -77,7 +140,7 @@ class ApiClient {
     try {
       const contentType = response.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
-        errorData = await response.clone().json(); // ← clone()
+        errorData = await response.clone().json();
       } else {
         errorData = await response.clone().text();
       }
@@ -94,12 +157,15 @@ class ApiClient {
     return error;
   }
 
+  // ============================================
+  // NAGŁÓWKI
+  // ============================================
+
   private getHeaders(customHeaders?: HeadersInit): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
 
-    // Dodaj custom headers
     if (customHeaders) {
       if (customHeaders instanceof Headers) {
         customHeaders.forEach((value, key) => {
@@ -114,7 +180,6 @@ class ApiClient {
       }
     }
 
-    // Dodaj Authorization Bearer token
     if (this.accessToken) {
       headers['Authorization'] = `Bearer ${this.accessToken}`;
       console.log('🔐 Added Authorization header with token');
@@ -124,6 +189,10 @@ class ApiClient {
 
     return headers;
   }
+
+  // ============================================
+  // REFRESH TOKEN
+  // ============================================
 
   private async refreshAccessToken(): Promise<string> {
     console.log('🔄 Refreshing access token...');
@@ -147,12 +216,14 @@ class ApiClient {
       console.log('✅ Token refreshed successfully');
       
       this.saveToken(data.accessToken);
+      this.saveAccountInfo(data.account); // ← Zapisz też nowe info o koncie
       
       return data.accessToken;
     } catch (error) {
       console.error('❌ Token refresh failed:', error);
       
       this.clearToken();
+      this.clearAccountInfo();
       
       if (typeof window !== 'undefined') {
         window.location.href = '/home';
@@ -174,6 +245,10 @@ class ApiClient {
     this.failedQueue = [];
   }
 
+  // ============================================
+  // REQUEST
+  // ============================================
+
   private async request<T>(
     endpoint: string,
     options: RequestInit = {}
@@ -183,7 +258,6 @@ class ApiClient {
     const method = options.method || 'GET';
 
     console.log(`📤 Request: ${method} ${endpoint}`);
-    console.log('📋 Request headers:', headers);
 
     try {
       let response = await fetch(url, {
@@ -193,7 +267,7 @@ class ApiClient {
       });
 
       if (response.status === 403) {
-        console.log('⚠️ 403 Unauthorized - Token expired');
+        console.log('⚠️ 403 Forbidden - Token expired');
 
         if (!this.isRefreshing) {
           this.isRefreshing = true;
@@ -202,7 +276,6 @@ class ApiClient {
             const newAccessToken = await this.refreshAccessToken();
             
             this.isRefreshing = false;
-            
             this.processQueue(null, newAccessToken);
 
             console.log(`🔄 Retrying request: ${method} ${endpoint}`);
@@ -242,12 +315,13 @@ class ApiClient {
         await this.logErrorResponse(response, endpoint, method);
         
         this.clearToken();
+        this.clearAccountInfo();
         
         if (typeof window !== 'undefined') {
           window.location.href = '/home';
         }
         
-        throw new Error('Unauthorized');
+        throw new Error('Forbidden');
       }
 
       if (!response.ok) {
@@ -320,6 +394,10 @@ class ApiClient {
     });
   }
 
+  // ============================================
+  // AUTENTYKACJA
+  // ============================================
+
   async login(credentials: { email: string; password: string }): Promise<TokenResponse> {
     console.log('🔐 Logging in...');
 
@@ -342,7 +420,9 @@ class ApiClient {
       const data: TokenResponse = await response.json();
       
       this.saveToken(data.accessToken);
-      console.log('✅ Login successful - Token saved');
+      this.saveAccountInfo(data.account);
+
+      console.log('✅ Login successful');
       
       return data;
     } catch (error) {
@@ -371,6 +451,7 @@ class ApiClient {
       console.error('❌ Logout request failed:', error);
     } finally {
       this.clearToken();
+      this.clearAccountInfo();
       
       if (typeof window !== 'undefined') {
         window.location.href = '/';
@@ -380,14 +461,65 @@ class ApiClient {
     }
   }
 
+  // ============================================
+  // METODY POMOCNICZE
+  // ============================================
+
+  /**
+   * Sprawdza czy użytkownik jest adminem
+   */
+  isAdmin(): boolean {
+    console.log('🔍 Checking admin status...');
+    console.log('  - accountInfo:', this.accountInfo);
+    console.log('  - accountType:', this.accountInfo?.accountType);
+    
+    const isAdmin = this.accountInfo?.accountType === 'ADMIN';
+    console.log('  - isAdmin:', isAdmin);
+    
+    return isAdmin;
+  }
+
+  /**
+   * Sprawdza czy użytkownik jest nauczycielem
+   */
+  isTeacher(): boolean {
+    return this.accountInfo?.accountType === 'TEACHER';
+  }
+
+  /**
+   * Sprawdza czy użytkownik jest rodzicem
+   */
+  isParent(): boolean {
+    return this.accountInfo?.accountType === 'PARENT';
+  }
+
+  /**
+   * Pobiera typ konta użytkownika
+   */
+  getAccountType(): string | null {
+    return this.accountInfo?.accountType || null;
+  }
+
+  /**
+   * Pobiera informacje o koncie
+   */
+  getAccountInfo(): AccountInfo | null {
+    return this.accountInfo;
+  }
+
+  /**
+   * Sprawdza czy użytkownik jest zalogowany
+   */
   isAuthenticated(): boolean {
     const isAuth = !!this.accessToken;
     console.log('🔍 isAuthenticated:', isAuth);
     return isAuth;
   }
 
+  /**
+   * Pobiera aktualny access token
+   */
   getAccessToken(): string | null {
-    console.log('🔑 Current access token:', this.accessToken ? 'Token exists' : 'No token');
     return this.accessToken;
   }
 }

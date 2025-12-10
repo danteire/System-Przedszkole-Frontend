@@ -14,5 +14,6 @@ export default [
     route("meals", "meals/meals.tsx"),
     route("messages", "messages/messages.tsx"),
     route("events", "events/events.tsx"),
+    route("adminPanel", "admin/adminPanel.tsx"),
   ]),
 ] satisfies RouteConfig;
