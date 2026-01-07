@@ -461,13 +461,7 @@ class ApiClient {
     }
   }
 
-  // ============================================
-  // METODY POMOCNICZE
-  // ============================================
-
-  /**
-   * Sprawdza czy użytkownik jest adminem
-   */
+ 
   isAdmin(): boolean {
     console.log('🔍 Checking admin status...');
     console.log('  - accountInfo:', this.accountInfo);
@@ -479,46 +473,32 @@ class ApiClient {
     return isAdmin;
   }
 
-  /**
-   * Sprawdza czy użytkownik jest nauczycielem
-   */
   isTeacher(): boolean {
     return this.accountInfo?.accountType === 'TEACHER';
   }
 
-  /**
-   * Sprawdza czy użytkownik jest rodzicem
-   */
+
   isParent(): boolean {
     return this.accountInfo?.accountType === 'PARENT';
   }
 
-  /**
-   * Pobiera typ konta użytkownika
-   */
+  
   getAccountType(): string | null {
     return this.accountInfo?.accountType || null;
   }
 
-  /**
-   * Pobiera informacje o koncie
-   */
   getAccountInfo(): AccountInfo | null {
     return this.accountInfo;
   }
 
-  /**
-   * Sprawdza czy użytkownik jest zalogowany
-   */
+  
   isAuthenticated(): boolean {
     const isAuth = !!this.accessToken;
     console.log('🔍 isAuthenticated:', isAuth);
     return isAuth;
   }
 
-  /**
-   * Pobiera aktualny access token
-   */
+
   getAccessToken(): string | null {
     return this.accessToken;
   }

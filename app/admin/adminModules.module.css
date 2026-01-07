@@ -1,0 +1,215 @@
+/* app/routes/adminPanel/adminModules.module.css */
+.modulesWrapper {
+  max-width: 1200px;
+  margin: var(--spacing-3xl) auto;
+  padding: 0 var(--spacing-xl);
+}
+
+.section {
+  background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+  border-radius: var(--radius-2xl);
+  padding: var(--spacing-2xl);
+  margin-bottom: var(--spacing-xl);
+  box-shadow: 0 10px 40px rgba(45, 55, 72, 0.4);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+}
+
+.sectionIcon {
+  color: var(--bg-white);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--bg-white);
+  margin: 0;
+}
+
+.moduleGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.moduleCard {
+  background: var(--bg-white);
+  border: none;
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl) var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+  cursor: pointer;
+  transition: all var(--transition-slow);
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.moduleCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #4a5568 0%, #2d3748 100%);
+  transform: scaleX(0);
+  transition: transform var(--transition-slow);
+}
+
+.moduleCard:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+}
+
+.moduleCard:hover::before {
+  transform: scaleX(1);
+}
+
+.moduleCard.active {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 30px rgba(74, 85, 104, 0.4);
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
+}
+
+.moduleCard.active::before {
+  transform: scaleX(1);
+  height: 6px;
+}
+
+.moduleCard[data-color="primary"] .iconWrapper {
+  background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+}
+
+.moduleCard[data-color="success"] .iconWrapper {
+  background: var(--gradient-success);
+}
+
+.moduleCard[data-color="info"] .iconWrapper {
+  background: var(--gradient-info);
+}
+
+.moduleCard[data-color="warning"] .iconWrapper {
+  background: var(--gradient-warning);
+}
+
+.iconWrapper {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--bg-white);
+  transition: all var(--transition-slow);
+}
+
+.moduleCard:hover .iconWrapper {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.moduleCard.active .iconWrapper {
+  transform: scale(1.15) rotate(360deg);
+}
+
+.moduleLabel {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-gray-800);
+  text-align: center;
+}
+
+.viewCard {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.viewCard[data-color="outline-primary"] .iconWrapper {
+  background: transparent;
+  border: 3px solid #4a5568;
+  color: #4a5568;
+}
+
+.viewCard[data-color="outline-success"] .iconWrapper {
+  background: transparent;
+  border: 3px solid var(--color-success);
+  color: var(--color-success);
+}
+
+.viewCard[data-color="outline-info"] .iconWrapper {
+  background: transparent;
+  border: 3px solid var(--color-primary);
+  color: var(--color-primary);
+}
+
+.viewCard[data-color="outline-warning"] .iconWrapper {
+  background: transparent;
+  border: 3px solid var(--color-warning);
+  color: var(--color-warning);
+}
+
+.actionFeedback {
+  background: var(--gradient-success);
+  color: var(--bg-white);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  animation: slideIn var(--transition-slow);
+  box-shadow: 0 8px 25px rgba(72, 187, 120, 0.3);
+}
+
+.feedbackText {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+}
+
+.feedbackText strong {
+  font-weight: var(--font-weight-bold);
+  text-transform: capitalize;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .modulesWrapper {
+    padding: 0 var(--spacing-md);
+  }
+
+  .section {
+    padding: var(--spacing-lg);
+  }
+
+  .moduleGrid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spacing-md);
+  }
+
+  .moduleCard {
+    padding: var(--spacing-lg) var(--spacing-md);
+  }
+
+  .iconWrapper {
+    width: 60px;
+    height: 60px;
+  }
+
+  .sectionTitle {
+    font-size: var(--font-size-2xl);
+  }
+}

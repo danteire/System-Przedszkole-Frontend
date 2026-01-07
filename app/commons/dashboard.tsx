@@ -35,7 +35,7 @@ export default function Dashboard() {
     <div>
       <Navbar expand="lg" className="bg-body-tertiary">
         <Container>
-          <Navbar.Brand as={Link} to="/dashboard">
+          <Navbar.Brand as={Link} to="/home">
             Przedszkole +
             
           </Navbar.Brand>

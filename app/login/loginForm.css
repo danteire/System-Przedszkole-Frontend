@@ -1,40 +1,50 @@
-/* --- Główne kontenery --- */
+/* app/routes/login/login.module.css */
 .app-login {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  background: #f4f4f4;
+  min-height: 100vh;
+  background: var(--color-gray-100);
 }
 
 .login-container {
-  background: white;
-  padding: 32px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  background: var(--bg-white);
+  padding: var(--spacing-2xl);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
   width: 350px;
   text-align: center;
 }
 
-/* --- Formularz --- */
 .login-form-input {
   width: 100%;
   padding: 10px;
   margin-top: 12px;
-  border-radius: 8px;
-  border: 1px solid #ccc;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-gray-300);
+  transition: border var(--transition-fast);
+}
+
+.login-form-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
 }
 
 .login-submit-btn {
   width: 100%;
   padding: 10px;
   margin-top: 20px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   border: none;
-  background-color: #007bff;
-  color: white;
-  font-weight: bold;
+  background: var(--color-primary);
+  color: var(--bg-white);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
+  transition: background var(--transition-base);
+}
+
+.login-submit-btn:hover:not(:disabled) {
+  background: var(--color-primary-darker);
 }
 
 .login-submit-btn:disabled {
@@ -42,9 +52,8 @@
   cursor: not-allowed;
 }
 
-/* --- Błędy --- */
 .login-error {
-  color: red;
-  font-weight: bold;
+  color: var(--color-danger);
+  font-weight: var(--font-weight-semibold);
   margin-bottom: 12px;
 }
