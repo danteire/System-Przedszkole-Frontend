@@ -4,11 +4,11 @@ import { X } from "lucide-react";
 import { api } from "~/utils/serviceAPI";
 import styles from "./adminModules.module.css";
 import AddTeacherForm from "./forms/AddTeacherForm";
-// import AddParentForm from "./forms/AddParentForm";
+import AddParentForm from "./forms/AddParentForm";
 // import AddPreschoolerForm from "./forms/AddPreschoolerForm";
 // import AddGroupForm from "./forms/AddGroupForm";
-// import ViewTeachers from "./views/ViewTeachers";
-// import ViewParents from "./views/ViewParents";
+import ViewTeachers from "./views/ViewTeachers";
+import ViewParents from "./views/ViewParents";
 // import ViewPreschoolers from "./views/ViewPreschoolers";
 // import ViewGroups from "./views/ViewGroups";
 
@@ -36,16 +36,16 @@ export default function AdminContent({ action, onClose }: AdminContentProps) {
     switch (action) {
       case "add-teacher":
         return <AddTeacherForm onSuccess={onClose} />;
-    //   case "add-parent":
-    //     return <AddParentForm onSuccess={onClose} />;
+      case "add-parent":
+        return <AddParentForm onSuccess={onClose} />;
     //   case "add-preschooler":
     //     return <AddPreschoolerForm onSuccess={onClose} />;
     //   case "add-group":
     //     return <AddGroupForm onSuccess={onClose} />;
-    //   case "view-teachers":
-    //     return <ViewTeachers />;
-    //   case "view-parents":
-    //     return <ViewParents />;
+      case "view-teachers":
+        return <ViewTeachers />;
+      case "view-parents":
+        return <ViewParents />;
     //   case "view-preschoolers":
     //     return <ViewPreschoolers />;
     //   case "view-groups":

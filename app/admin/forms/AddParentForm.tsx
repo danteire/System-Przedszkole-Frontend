@@ -1,13 +1,13 @@
-// app/routes/adminPanel/forms/AddTeacherForm.tsx
+// app/routes/adminPanel/forms/AddParentForm.tsx
 import { useState } from "react";
 import { api } from "~/utils/serviceAPI";
 import styles from "./Form.module.css";
 
-interface AddTeacherFormProps {
+interface AddParentFormProps {
   onSuccess: () => void;
 }
 
-interface TeacherFormData {
+interface ParentFormData {
   email: string;
   password: string;
   firstName: string;
@@ -15,37 +15,17 @@ interface TeacherFormData {
   accountType: string;
 }
 
-type AccountType = "TEACHER" | "ADMIN" | "PARENT";
-
-export default function AddTeacherForm({ onSuccess }: AddTeacherFormProps) {
-  const [formData, setFormData] = useState<TeacherFormData>({
+export default function AddParentForm({ onSuccess }: AddParentFormProps) {
+  const [formData, setFormData] = useState<ParentFormData>({
     email: "",
     password: "",
     firstName: "",
     lastName: "",
-    accountType: "TEACHER",
+    accountType: "PARENT", // Stała wartość dla nauczyciela
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-
-  const accountTypes: { value: AccountType; label: string; description: string }[] = [
-    { 
-      value: "TEACHER", 
-      label: "Teacher", 
-      description: "Can manage classes and student attendance" 
-    },
-    { 
-      value: "ADMIN", 
-      label: "Administrator", 
-      description: "Full access to all system features" 
-    },
-    { 
-      value: "PARENT", 
-      label: "Parent", 
-      description: "Can view their children's information" 
-    },
-  ];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -72,6 +52,7 @@ export default function AddTeacherForm({ onSuccess }: AddTeacherFormProps) {
       return;
     }
 
+    // Walidacja email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError("Please enter a valid email address");
@@ -85,12 +66,13 @@ export default function AddTeacherForm({ onSuccess }: AddTeacherFormProps) {
       return;
     }
 
-    console.log("📤 Creating account with data:", {
+    console.log("📤 Creating Parent with data:", {
       ...formData,
-      password: "***hidden***",
+      password: "***hidden***", // Nie loguj hasła
     });
 
     try {
+      // Sprawdź uprawnienia
       if (!api.isAuthenticated()) {
         throw new Error("You are not authenticated. Please log in again.");
       }
@@ -99,7 +81,8 @@ export default function AddTeacherForm({ onSuccess }: AddTeacherFormProps) {
         throw new Error("You don't have admin permissions.");
       }
 
-      const response = await api.post("/teacher", {
+      // Wyślij request - backend oczekuje dokładnie tych pól
+      const response = await api.post("/accounts", {
         email: formData.email.trim(),
         password: formData.password,
         firstName: formData.firstName.trim(),
@@ -107,61 +90,50 @@ export default function AddTeacherForm({ onSuccess }: AddTeacherFormProps) {
         accountType: formData.accountType,
       });
 
-      console.log("✅ Account created successfully:", response);
+      console.log("✅ Parent created successfully:", response);
 
       setSuccess(true);
 
+      // Wyczyść formularz
       setFormData({
         email: "",
         password: "",
         firstName: "",
         lastName: "",
-        accountType: "TEACHER",
+        accountType: "PARENT",
       });
 
+      // Pokaż sukces i zamknij po 1.5 sekundy
       setTimeout(() => {
         onSuccess();
       }, 1500);
 
     } catch (err: any) {
-      console.error("❌ Failed to create account:", err);
+      console.error("❌ Failed to create Parent:", err);
 
-      // 401 = Unauthorized - brak dostępu
-      if (err.status === 401) {
-        setError("Access denied. You don't have permission to create accounts.");
-      } 
-      // 403 = Forbidden - wylogowanie jest obsługiwane w ApiClient
-      else if (err.status === 403) {
-        setError("Your session has expired. Redirecting to login...");
-        // ApiClient już przekierował do /login
-      } 
-      // 400 = Bad Request
-      else if (err.status === 400) {
+      if (err.status === 401 || err.status === 403) {
+        setError("Session expired or insufficient permissions. Please log in again.");
+        setTimeout(() => {
+          window.location.href = "/login";
+        }, 2000);
+      } else if (err.status === 400) {
         setError(err.data?.message || "Invalid data. Please check your input.");
-      } 
-      // 409 = Conflict
-      else if (err.status === 409) {
-        setError("An account with this email already exists.");
-      } 
-      // Inne błędy
-      else {
-        setError(err.message || "Failed to create account. Please try again.");
+      } else if (err.status === 409) {
+        setError("Parent with this email already exists.");
+      } else {
+        setError(err.message || "Failed to add Parent. Please try again.");
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
     if (error) setError(null);
-  };
-
-  const getAccountTypeDescription = (type: string) => {
-    return accountTypes.find(at => at.value === type)?.description || "";
   };
 
   return (
@@ -174,7 +146,7 @@ export default function AddTeacherForm({ onSuccess }: AddTeacherFormProps) {
 
       {success && (
         <div className={styles.success}>
-          <strong>Success!</strong> Account has been created successfully.
+          <strong>Success!</strong> Parent has been added successfully.
         </div>
       )}
 
@@ -227,7 +199,7 @@ export default function AddTeacherForm({ onSuccess }: AddTeacherFormProps) {
           required
           disabled={isLoading}
           className={styles.input}
-          placeholder="user@example.com"
+          placeholder="Parent@example.com"
         />
       </div>
 
@@ -248,40 +220,21 @@ export default function AddTeacherForm({ onSuccess }: AddTeacherFormProps) {
           placeholder="Enter password"
         />
         <small className={styles.hint}>
-          Password will be securely hashed by the server
+          Password will be hashed by the server
         </small>
       </div>
 
       <div className={styles.formGroup}>
-        <label htmlFor="accountType" className={styles.label}>
-          Account Type *
+        <label className={styles.label}>
+          Account Type
         </label>
-        <select
-          id="accountType"
-          name="accountType"
-          value={formData.accountType}
-          onChange={handleChange}
-          required
-          disabled={isLoading}
-          className={styles.select}
-        >
-          {accountTypes.map((type) => (
-            <option key={type.value} value={type.value}>
-              {type.label}
-            </option>
-          ))}
-        </select>
+        <div className={styles.readonlyField}>
+          Parent
+        </div>
         <small className={styles.hint}>
-          {getAccountTypeDescription(formData.accountType)}
+          Account type is automatically set to Parent
         </small>
       </div>
-
-      {formData.accountType === "ADMIN" && (
-        <div className={styles.warning}>
-          <strong>⚠️ Warning:</strong> You are creating an admin account with full system access. 
-          Make sure this is intended.
-        </div>
-      )}
 
       <button
         type="submit"
@@ -291,10 +244,10 @@ export default function AddTeacherForm({ onSuccess }: AddTeacherFormProps) {
         {isLoading ? (
           <>
             <span className={styles.spinner}></span>
-            Creating {formData.accountType === "TEACHER" ? "Teacher" : formData.accountType === "ADMIN" ? "Admin" : "Parent"}...
+            Adding Parent...
           </>
         ) : (
-          `Create ${formData.accountType === "TEACHER" ? "Teacher" : formData.accountType === "ADMIN" ? "Admin" : "Parent"} Account`
+          "Add Parent"
         )}
       </button>
     </form>

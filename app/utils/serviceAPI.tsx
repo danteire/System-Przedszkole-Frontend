@@ -226,7 +226,7 @@ class ApiClient {
       this.clearAccountInfo();
       
       if (typeof window !== 'undefined') {
-        window.location.href = '/home';
+        window.location.href = '/';
       }
       
       throw error;
@@ -249,108 +249,133 @@ class ApiClient {
   // REQUEST
   // ============================================
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
-    const headers = this.getHeaders(options.headers);
-    const method = options.method || 'GET';
+ // utils/serviceAPI.ts
 
-    console.log(`📤 Request: ${method} ${endpoint}`);
+private async request<T>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const url = `${this.baseUrl}${endpoint}`;
+  const headers = this.getHeaders(options.headers);
+  const method = options.method || 'GET';
 
-    try {
-      let response = await fetch(url, {
-        ...options,
-        headers,
-        credentials: 'include',
-      });
+  console.log(`📤 Request: ${method} ${endpoint}`);
 
-      if (response.status === 403) {
-        console.log('⚠️ 403 Forbidden - Token expired');
+  try {
+    let response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: 'include',
+    });
 
-        if (!this.isRefreshing) {
-          this.isRefreshing = true;
+    // 401 = Unauthorized (brak dostępu do zasobu)
+    if (response.status === 401) {
+      console.log('⚠️ 401 Unauthorized - Access denied to this resource');
+      await this.logErrorResponse(response, endpoint, method);
+      
+      const error = await this.createError(response, endpoint, method);
+      throw error;
+    }
 
-          try {
-            const newAccessToken = await this.refreshAccessToken();
-            
-            this.isRefreshing = false;
-            this.processQueue(null, newAccessToken);
+    // 403 = Forbidden (token wygasł lub nieprawidłowy)
+    if (response.status === 403) {
+      console.log('⚠️ 403 Forbidden - Token expired or invalid');
 
-            console.log(`🔄 Retrying request: ${method} ${endpoint}`);
-            
-            const newHeaders = this.getHeaders(options.headers);
-            response = await fetch(url, {
-              ...options,
-              headers: newHeaders,
-              credentials: 'include',
-            });
+      if (!this.isRefreshing) {
+        this.isRefreshing = true;
 
-          } catch (refreshError) {
-            this.isRefreshing = false;
-            this.processQueue(refreshError, null);
-            throw refreshError;
-          }
-        } else {
-          console.log('⏳ Waiting for token refresh...');
+        try {
+          const newAccessToken = await this.refreshAccessToken();
+          
+          this.isRefreshing = false;
+          this.processQueue(null, newAccessToken);
 
-          const newAccessToken = await new Promise<string>((resolve, reject) => {
-            this.failedQueue.push({ resolve, reject });
-          });
-
-          console.log(`🔄 Retrying queued request: ${method} ${endpoint}`);
-
+          console.log(`🔄 Retrying request: ${method} ${endpoint}`);
+          
           const newHeaders = this.getHeaders(options.headers);
           response = await fetch(url, {
             ...options,
             headers: newHeaders,
             credentials: 'include',
           });
+
+          // Jeśli nadal 403, wyloguj
+          if (response.status === 403) {
+            console.error('❌ Still 403 after refresh - Logging out');
+            await this.logErrorResponse(response, endpoint, method);
+            
+            this.clearToken();
+            this.clearAccountInfo();
+            
+            if (typeof window !== 'undefined') {
+              alert('Your session has expired. Please log in again.');
+              window.location.href = '/';
+            }
+            
+            throw new Error('Session expired');
+          }
+
+        } catch (refreshError) {
+          this.isRefreshing = false;
+          this.processQueue(refreshError, null);
+          
+          // Wyloguj przy błędzie refresh
+          this.clearToken();
+          this.clearAccountInfo();
+          
+          if (typeof window !== 'undefined') {
+            alert('Your session has expired. Please log in again.');
+            window.location.href = '/';
+          }
+          
+          throw refreshError;
         }
-      }
+      } else {
+        console.log('⏳ Waiting for token refresh...');
 
-      if (response.status === 403) {
-        console.error('❌ Still 403 after refresh - Logging out');
-        await this.logErrorResponse(response, endpoint, method);
-        
-        this.clearToken();
-        this.clearAccountInfo();
-        
-        if (typeof window !== 'undefined') {
-          window.location.href = '/home';
-        }
-        
-        throw new Error('Forbidden');
-      }
+        const newAccessToken = await new Promise<string>((resolve, reject) => {
+          this.failedQueue.push({ resolve, reject });
+        });
 
-      if (!response.ok) {
-        await this.logErrorResponse(response, endpoint, method);
-        const error = await this.createError(response, endpoint, method);
-        throw error;
-      }
+        console.log(`🔄 Retrying queued request: ${method} ${endpoint}`);
 
-      console.log(`✅ Response: ${method} ${endpoint} - ${response.status}`);
-      
-      const contentLength = response.headers.get('content-length');
-      if (contentLength === '0' || response.status === 204) {
-        return {} as T;
+        const newHeaders = this.getHeaders(options.headers);
+        response = await fetch(url, {
+          ...options,
+          headers: newHeaders,
+          credentials: 'include',
+        });
       }
-      
-      return response.json();
+    }
 
-    } catch (error) {
-      if (error instanceof TypeError) {
-        console.group('❌ Network Error');
-        console.error('Endpoint:', `${method} ${endpoint}`);
-        console.error('Error:', error.message);
-        console.error('Possible causes: Network timeout, CORS, or server is down');
-        console.groupEnd();
-      }
-      
+    // Obsługa innych błędów
+    if (!response.ok) {
+      await this.logErrorResponse(response, endpoint, method);
+      const error = await this.createError(response, endpoint, method);
       throw error;
     }
+
+    console.log(`✅ Response: ${method} ${endpoint} - ${response.status}`);
+    
+    const contentLength = response.headers.get('content-length');
+    if (contentLength === '0' || response.status === 204) {
+      return {} as T;
+    }
+    
+    return response.json();
+
+  } catch (error) {
+    if (error instanceof TypeError) {
+      console.group('❌ Network Error');
+      console.error('Endpoint:', `${method} ${endpoint}`);
+      console.error('Error:', error.message);
+      console.error('Possible causes: Network timeout, CORS, or server is down');
+      console.groupEnd();
+    }
+    
+    throw error;
   }
+}
 
   // ============================================
   // PUBLICZNE METODY HTTP

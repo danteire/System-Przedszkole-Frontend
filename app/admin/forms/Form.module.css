@@ -5,6 +5,12 @@
   gap: var(--spacing-lg);
 }
 
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-md);
+}
+
 .formGroup {
   display: flex;
   flex-direction: column;
@@ -40,6 +46,22 @@
 .select:disabled {
   background: var(--color-gray-100);
   cursor: not-allowed;
+}
+
+.readonlyField {
+  padding: 12px;
+  background: var(--color-gray-100);
+  border: 1px solid var(--color-gray-300);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-base);
+  color: var(--color-gray-700);
+  font-weight: var(--font-weight-semibold);
+}
+
+.hint {
+  font-size: var(--font-size-xs);
+  color: var(--color-gray-600);
+  font-style: italic;
 }
 
 .textarea {
@@ -103,4 +125,10 @@
   border-radius: var(--radius-md);
   font-weight: var(--font-weight-medium);
   border-left: 4px solid var(--color-success);
+}
+
+@media (max-width: 768px) {
+  .formRow {
+    grid-template-columns: 1fr;
+  }
 }
