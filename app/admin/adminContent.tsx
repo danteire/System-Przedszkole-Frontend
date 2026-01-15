@@ -5,10 +5,10 @@ import { api } from "~/utils/serviceAPI";
 import styles from "./adminModules.module.css";
 import AddAccountForm from "./forms/AddAccountForm";
 import AddPreschoolerForm from "./forms/AddPreschoolerForm";
-// import AddGroupForm from "./forms/AddGroupForm";
+import AddGroupForm from "./forms/AddGroupForm";
 import ViewTeachers from "./views/ViewAccounts";
 import ViewPreschoolers from "./views/Viewpreschoolers";
-// import ViewGroups from "./views/ViewGroups";
+import ViewGroups from "./views/ViewGroups";
 
 interface AdminContentProps {
   action: string;
@@ -22,7 +22,6 @@ export default function AdminContent({ action, onClose }: AdminContentProps) {
       "add-preschooler": "Add New Preschooler",
       "add-group": "Add New Group",
       "view-accounts": "All Accounts",
-      "view-parents": "All Parents",
       "view-preschoolers": "All Preschoolers",
       "view-groups": "All Groups",
     };
@@ -35,14 +34,14 @@ export default function AdminContent({ action, onClose }: AdminContentProps) {
         return <AddAccountForm onSuccess={onClose} />;
       case "add-preschooler":
         return <AddPreschoolerForm onSuccess={onClose} />;
-    //   case "add-group":
-    //     return <AddGroupForm onSuccess={onClose} />;
+      case "add-group":
+        return <AddGroupForm onSuccess={onClose} />;
         case "view-account":
           return <ViewTeachers />;
       case "view-preschoolers":
         return <ViewPreschoolers />;
-    //   case "view-groups":
-    //     return <ViewGroups />;
+      case "view-groups":
+        return <ViewGroups />;
       default:
         return <div>Select an action from above</div>;
     }
