@@ -1,9 +1,7 @@
 // app/routes/adminPanel/forms/AddPreschoolerForm.tsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "~/utils/serviceAPI";
 import styles from "./Form.module.css";
-import { p } from "node_modules/@react-router/dev/dist/routes-CZR-bKRt";
-import { group } from "console";
 import groups from "~/groups/groups";
 
 interface AddPreschoolerFormProps {
@@ -17,6 +15,20 @@ interface PreschoolerFormData {
   groupId?: number;
 }
 
+interface Parent{
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+  accountType: string;
+}
+
+interface Group{
+  id: number;
+  groupName: string;
+  mainCaretakerId: number;
+}
+
 export default function AddPreschoolerForm({ onSuccess }: AddPreschoolerFormProps) {
   const [formData, setFormData] = useState<PreschoolerFormData>({
     firstName: "",
@@ -24,9 +36,99 @@ export default function AddPreschoolerForm({ onSuccess }: AddPreschoolerFormProp
     parentId: undefined,
     groupId: undefined,
   });
+
+  const [parents, setParents] = useState<Parent[]>([])
+  const [groups, setGroups] = useState<Group[]>([])
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  useEffect(()=>{
+    loadParents();
+    loadGroups();
+  }, []);
+
+  const loadParents = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+          if (!api.isAuthenticated()) {
+            throw new Error("You are not authenticated. Please log in again.");
+          }
+    
+          console.log("📤 Fetching Parents...");
+    
+          const response = await api.get<Parent[] | { data: Parent[] }>("/accounts/parents");
+    
+          console.log("✅ Parents fetched:", response);
+    
+          let accountsData: Parent[];
+          if (Array.isArray(response)) {
+            accountsData = response;
+          } else if (response && 'data' in response && Array.isArray(response.data)) {
+            accountsData = response.data;
+          } else {
+            console.error("Unexpected response format:", response);
+            accountsData = [];
+          }
+    
+          setParents(accountsData);
+        } catch (err: any) {
+          console.error("❌ Failed to load Parents:", err);
+    
+          // 401 = Unauthorized - brak dostępu
+          if (err.status === 401) {
+            setError("Access denied. You don't have permission to view Parents.");
+          } 
+          // Inne błędy
+          else {
+            setError(err.message || "Failed to load Parents");
+          }
+        } finally {
+          setIsLoading(false);
+        }
+  }
+
+  const loadGroups = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+          if (!api.isAuthenticated()) {
+            throw new Error("You are not authenticated. Please log in again.");
+          }
+    
+          console.log("📤 Fetching Parents...");
+    
+          const response = await api.get<Group[] | { data: Group[] }>("/groups");
+    
+          console.log("✅ Groups fetched:", response);
+    
+          let accountsData: Group[];
+          if (Array.isArray(response)) {
+            accountsData = response;
+          } else if (response && 'data' in response && Array.isArray(response.data)) {
+            accountsData = response.data;
+          } else {
+            console.error("Unexpected response format:", response);
+            accountsData = [];
+          }
+    
+          setGroups(accountsData);
+        } catch (err: any) {
+          console.error("❌ Failed to load groups:", err);
+    
+          // 401 = Unauthorized - brak dostępu
+          if (err.status === 401) {
+            setError("Access denied. You don't have permission to view groups.");
+          } 
+          // Inne błędy
+          else {
+            setError(err.message || "Failed to load groups");
+          }
+        } finally {
+          setIsLoading(false);
+        }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,6 +154,11 @@ export default function AddPreschoolerForm({ onSuccess }: AddPreschoolerFormProp
       setIsLoading(false);
       return;
     }
+    if (!formData.groupId){
+      setError("Group is required");
+      setIsLoading(false);
+      return;
+    }
 
     // Walidacja parentId
 
@@ -71,8 +178,7 @@ export default function AddPreschoolerForm({ onSuccess }: AddPreschoolerFormProp
         throw new Error("You don't have admin permissions.");
       }
 
-      // Wyślij request - backend oczekuje dokładnie tych pól
-      const response = await api.post("/accounts", {
+      const response = await api.post("/preschoolers", {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         parentId: formData.parentId,
@@ -183,23 +289,6 @@ export default function AddPreschoolerForm({ onSuccess }: AddPreschoolerFormProp
       </div>
 
       <div className={styles.formGroup}>
-        <label htmlFor="email" className={styles.label}>
-          Parent Email *
-        </label>
-        <input
-          type="email"
-          id="email"
-          name="email"
-          value={formData.email}
-          onChange={handleChange}
-          required
-          disabled={isLoading}
-          className={styles.input}
-          placeholder="parent@example.com"
-        />
-      </div>
-
-      <div className={styles.formGroup}>
         <label htmlFor="groupId" className={styles.label}>
           Group *
         </label>
@@ -215,10 +304,32 @@ export default function AddPreschoolerForm({ onSuccess }: AddPreschoolerFormProp
           <option value="">Select a group</option>
           {groups.map((group) => (
             <option key={group.id} value={group.id}>
-              {group.name}
+              {group.mainCaretakerId}
             </option>
           ))}
         </select>
+      </div>
+
+      <div className={styles.formGroup}>
+        <label htmlFor="parentId" className={styles.label}>
+          Parent *
+        </label>
+        <select
+          id="parentId"
+          name="parentId"
+          value={formData.parentId}
+          onChange={handleSelectChange}
+          required
+          disabled={isLoading}
+          className={styles.input}
+          >
+            <option value="">Select a Parent</option>
+            {parents.map((parent) => (
+              <option key={parent.id} value={parent.id}>
+                {parent.email}
+              </option>
+            ))}
+          </select>
       </div>
 
       <div className={styles.formGroup}>

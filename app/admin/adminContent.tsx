@@ -4,10 +4,10 @@ import { X } from "lucide-react";
 import { api } from "~/utils/serviceAPI";
 import styles from "./adminModules.module.css";
 import AddAccountForm from "./forms/AddAccountForm";
-// import AddPreschoolerForm from "./forms/AddPreschoolerForm";
+import AddPreschoolerForm from "./forms/AddPreschoolerForm";
 // import AddGroupForm from "./forms/AddGroupForm";
 import ViewTeachers from "./views/ViewAccounts";
-// import ViewPreschoolers from "./views/ViewPreschoolers";
+import ViewPreschoolers from "./views/Viewpreschoolers";
 // import ViewGroups from "./views/ViewGroups";
 
 interface AdminContentProps {
@@ -33,14 +33,14 @@ export default function AdminContent({ action, onClose }: AdminContentProps) {
     switch (action) {
       case "add-account":
         return <AddAccountForm onSuccess={onClose} />;
-    //   case "add-preschooler":
-    //     return <AddPreschoolerForm onSuccess={onClose} />;
+      case "add-preschooler":
+        return <AddPreschoolerForm onSuccess={onClose} />;
     //   case "add-group":
     //     return <AddGroupForm onSuccess={onClose} />;
         case "view-account":
           return <ViewTeachers />;
-    //   case "view-preschoolers":
-    //     return <ViewPreschoolers />;
+      case "view-preschoolers":
+        return <ViewPreschoolers />;
     //   case "view-groups":
     //     return <ViewGroups />;
       default:

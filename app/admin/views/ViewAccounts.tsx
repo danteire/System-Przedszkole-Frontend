@@ -67,9 +67,8 @@ export default function ViewAccounts() {
     if (!confirm(`Are you sure you want to delete ${name}?`)) {
       return;
     }
-
     try {
-      await api.delete(`/teachers/${id}`);
+      await api.delete(`/accounts/${id}`);
       console.log(`✅ Account ${id} deleted`);
 
       setAccounts(accounts.filter(a => a.id !== id));
