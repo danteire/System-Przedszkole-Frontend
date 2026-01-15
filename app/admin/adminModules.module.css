@@ -213,3 +213,13 @@
     font-size: var(--font-size-2xl);
   }
 }
+
+.placeholder {
+  padding: var(--spacing-3xl);
+  text-align: center;
+  color: var(--color-gray-600);
+  font-size: var(--font-size-lg);
+  background: var(--color-gray-50);
+  border-radius: var(--radius-md);
+  border: 2px dashed var(--color-gray-300);
+}

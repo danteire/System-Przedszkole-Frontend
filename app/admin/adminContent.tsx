@@ -3,12 +3,10 @@ import { useState } from "react";
 import { X } from "lucide-react";
 import { api } from "~/utils/serviceAPI";
 import styles from "./adminModules.module.css";
-import AddTeacherForm from "./forms/AddTeacherForm";
-import AddParentForm from "./forms/AddParentForm";
+import AddAccountForm from "./forms/AddAccountForm";
 // import AddPreschoolerForm from "./forms/AddPreschoolerForm";
 // import AddGroupForm from "./forms/AddGroupForm";
-import ViewTeachers from "./views/ViewTeachers";
-import ViewParents from "./views/ViewParents";
+import ViewTeachers from "./views/ViewAccounts";
 // import ViewPreschoolers from "./views/ViewPreschoolers";
 // import ViewGroups from "./views/ViewGroups";
 
@@ -20,11 +18,10 @@ interface AdminContentProps {
 export default function AdminContent({ action, onClose }: AdminContentProps) {
   const getTitle = () => {
     const titles: Record<string, string> = {
-      "add-teacher": "Add New Teacher",
-      "add-parent": "Add New Parent",
+      "add-account": "Add New Account",
       "add-preschooler": "Add New Preschooler",
       "add-group": "Add New Group",
-      "view-teachers": "All Teachers",
+      "view-accounts": "All Accounts",
       "view-parents": "All Parents",
       "view-preschoolers": "All Preschoolers",
       "view-groups": "All Groups",
@@ -34,18 +31,14 @@ export default function AdminContent({ action, onClose }: AdminContentProps) {
 
   const renderContent = () => {
     switch (action) {
-      case "add-teacher":
-        return <AddTeacherForm onSuccess={onClose} />;
-      case "add-parent":
-        return <AddParentForm onSuccess={onClose} />;
+      case "add-account":
+        return <AddAccountForm onSuccess={onClose} />;
     //   case "add-preschooler":
     //     return <AddPreschoolerForm onSuccess={onClose} />;
     //   case "add-group":
     //     return <AddGroupForm onSuccess={onClose} />;
-      case "view-teachers":
-        return <ViewTeachers />;
-      case "view-parents":
-        return <ViewParents />;
+        case "view-account":
+          return <ViewTeachers />;
     //   case "view-preschoolers":
     //     return <ViewPreschoolers />;
     //   case "view-groups":

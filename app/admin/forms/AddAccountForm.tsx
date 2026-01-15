@@ -1,13 +1,13 @@
-// app/routes/adminPanel/forms/AddParentForm.tsx
-import { useState } from "react";
+// app/routes/adminPanel/forms/AddAccountForm.tsx
+import { useState, useEffect } from "react";
 import { api } from "~/utils/serviceAPI";
 import styles from "./Form.module.css";
 
-interface AddParentFormProps {
+interface AddAccountFormProps {
   onSuccess: () => void;
 }
 
-interface ParentFormData {
+interface AccountFormData {
   email: string;
   password: string;
   firstName: string;
@@ -15,18 +15,51 @@ interface ParentFormData {
   accountType: string;
 }
 
-export default function AddParentForm({ onSuccess }: AddParentFormProps) {
-  const [formData, setFormData] = useState<ParentFormData>({
+type AccountType = "TEACHER" | "ADMIN" | "PARENT";
+
+const endpointMap: Record<AccountType, string> = {
+        TEACHER: "teacher",
+        ADMIN: "admin",
+        PARENT: "parent",
+};
+
+
+
+export default function AddAccountForm({ onSuccess }: AddAccountFormProps) {
+  const [formData, setFormData] = useState<AccountFormData>({
     email: "",
     password: "",
     firstName: "",
     lastName: "",
-    accountType: "PARENT", // Stała wartość dla nauczyciela
+    accountType: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [emailList, setEmailList] = useState<string[]>([]);
+  const accountTypes: { value: AccountType; label: string; description: string }[] = [
+    { 
+      value: "TEACHER", 
+      label: "Teacher", 
+      description: "Can manage classes and student attendance" 
+    },
+    { 
+      value: "ADMIN", 
+      label: "Administrator", 
+      description: "Full access to all system features" 
+    },
+    { 
+      value: "PARENT", 
+      label: "Parent", 
+      description: "Can view their children's information" 
+    },
+  ];
 
+    useEffect(() => {
+        getEmailList().then(emails => setEmailList(emails));
+    }, []);  
+    
+    console.log("📧 Fetched email list for validation:", emailList);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -52,10 +85,14 @@ export default function AddParentForm({ onSuccess }: AddParentFormProps) {
       return;
     }
 
-    // Walidacja email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError("Please enter a valid email address");
+      setIsLoading(false);
+      return;
+    }
+    if (emailList.includes(formData.email.toLowerCase())) {
+      setError("An account with this email already exists.");
       setIsLoading(false);
       return;
     }
@@ -66,13 +103,18 @@ export default function AddParentForm({ onSuccess }: AddParentFormProps) {
       return;
     }
 
-    console.log("📤 Creating Parent with data:", {
+    if (!formData.accountType) {
+      setError("Please select an account type");
+      setIsLoading(false);
+      return;
+    }
+
+    console.log("📤 Creating account with data:", {
       ...formData,
-      password: "***hidden***", // Nie loguj hasła
+      password: "***hidden***",
     });
 
     try {
-      // Sprawdź uprawnienia
       if (!api.isAuthenticated()) {
         throw new Error("You are not authenticated. Please log in again.");
       }
@@ -81,8 +123,11 @@ export default function AddParentForm({ onSuccess }: AddParentFormProps) {
         throw new Error("You don't have admin permissions.");
       }
 
-      // Wyślij request - backend oczekuje dokładnie tych pól
-      const response = await api.post("/accounts", {
+      const endpoint = endpointMap[formData.accountType as AccountType];
+      
+      console.log(`📤 Sending POST to /accounts/${endpoint}`);
+
+      const response = await api.post(`/accounts`, {
         email: formData.email.trim(),
         password: formData.password,
         firstName: formData.firstName.trim(),
@@ -90,7 +135,7 @@ export default function AddParentForm({ onSuccess }: AddParentFormProps) {
         accountType: formData.accountType,
       });
 
-      console.log("✅ Parent created successfully:", response);
+      console.log("✅ Account created successfully:", response);
 
       setSuccess(true);
 
@@ -100,42 +145,77 @@ export default function AddParentForm({ onSuccess }: AddParentFormProps) {
         password: "",
         firstName: "",
         lastName: "",
-        accountType: "PARENT",
+        accountType: "TEACHER",
       });
 
-      // Pokaż sukces i zamknij po 1.5 sekundy
       setTimeout(() => {
         onSuccess();
       }, 1500);
 
     } catch (err: any) {
-      console.error("❌ Failed to create Parent:", err);
+      console.error("❌ Failed to create account:", err);
 
-      if (err.status === 401 || err.status === 403) {
-        setError("Session expired or insufficient permissions. Please log in again.");
-        setTimeout(() => {
-          window.location.href = "/login";
-        }, 2000);
-      } else if (err.status === 400) {
+      if (err.status === 401) {
+        setError("Access denied. You don't have permission to create accounts.");
+      } 
+      else if (err.status === 403) {
+        setError("Your session has expired. Redirecting to login...");
+      } 
+      else if (err.status === 400) {
         setError(err.data?.message || "Invalid data. Please check your input.");
-      } else if (err.status === 409) {
-        setError("Parent with this email already exists.");
-      } else {
-        setError(err.message || "Failed to add Parent. Please try again.");
+      } 
+      else if (err.status === 409) {
+        setError("An account with this email already exists.");
+      } 
+      else {
+        setError(err.message || "Failed to create account. Please try again.");
       }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+    console.log("🔄 Form data updated:", {
       ...formData,
       [e.target.name]: e.target.value,
     });
     if (error) setError(null);
   };
 
+  const getAccountTypeDescription = (type: string) => {
+    return accountTypes.find(at => at.value === type)?.description || "";
+  };
+
+  const getAccountTypeLabel = (type: string) => {
+    const accountType = accountTypes.find(at => at.value === type);
+    return accountType?.label || "Account";
+  };
+
+
+  async function getEmailList(): Promise<string[]> {
+    interface AccountDTO {
+        email: string;
+        password: string;
+        firstName: string;
+        lastName: string;
+        accountType: string;
+    }
+    try {
+        const response = await api.get<AccountDTO[]>("/accounts");
+        return response.map((account: AccountDTO) => account.email);
+    } catch (err) {
+        console.error("❌ Failed to fetch email list:", err);
+        return [];
+    }
+
+
+
+  }
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
       {error && (
@@ -146,7 +226,7 @@ export default function AddParentForm({ onSuccess }: AddParentFormProps) {
 
       {success && (
         <div className={styles.success}>
-          <strong>Success!</strong> Parent has been added successfully.
+          <strong>Success!</strong> Account has been created successfully.
         </div>
       )}
 
@@ -199,7 +279,7 @@ export default function AddParentForm({ onSuccess }: AddParentFormProps) {
           required
           disabled={isLoading}
           className={styles.input}
-          placeholder="Parent@example.com"
+          placeholder="user@example.com"
         />
       </div>
 
@@ -220,21 +300,40 @@ export default function AddParentForm({ onSuccess }: AddParentFormProps) {
           placeholder="Enter password"
         />
         <small className={styles.hint}>
-          Password will be hashed by the server
+          Password will be securely hashed by the server
         </small>
       </div>
 
       <div className={styles.formGroup}>
-        <label className={styles.label}>
-          Account Type
+        <label htmlFor="accountType" className={styles.label}>
+          Account Type *
         </label>
-        <div className={styles.readonlyField}>
-          Parent
-        </div>
+        <select
+          id="accountType"
+          name="accountType"
+          value={formData.accountType}
+          onChange={handleChange}
+          required
+          disabled={isLoading}
+          className={styles.select}
+        >
+          {accountTypes.map((type) => (
+            <option key={type.value} value={type.value}>
+              {type.label}
+            </option>
+          ))}
+        </select>
         <small className={styles.hint}>
-          Account type is automatically set to Parent
+          {getAccountTypeDescription(formData.accountType)}
         </small>
       </div>
+
+      {formData.accountType === "ADMIN" && (
+        <div className={styles.warning}>
+          <strong>⚠️ Warning:</strong> You are creating an admin account with full system access. 
+          Make sure this is intended.
+        </div>
+      )}
 
       <button
         type="submit"
@@ -244,10 +343,10 @@ export default function AddParentForm({ onSuccess }: AddParentFormProps) {
         {isLoading ? (
           <>
             <span className={styles.spinner}></span>
-            Adding Parent...
+            Creating {getAccountTypeLabel(formData.accountType)}...
           </>
         ) : (
-          "Add Parent"
+          `Create ${getAccountTypeLabel(formData.accountType)} Account`
         )}
       </button>
     </form>

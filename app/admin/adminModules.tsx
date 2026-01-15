@@ -16,15 +16,15 @@ interface ModuleButton {
 
 export default function AdminModules({ onAction, activeAction }: ModulesProps) {
   const addModules: ModuleButton[] = [
-    { label: "Add Teacher", action: "add-teacher", icon: UserCheck, color: "primary" },
-    { label: "Add Parent", action: "add-parent", icon: Users, color: "success" },
+    // { label: "Add Teacher", action: "add-teacher", icon: UserCheck, color: "primary" },
+    { label: "Add Account", action: "add-account", icon: Users, color: "primary" },
     { label: "Add Preschooler", action: "add-preschooler", icon: Baby, color: "info" },
     { label: "Add Group", action: "add-group", icon: School, color: "warning" },
   ];
 
   const viewModules: ModuleButton[] = [
-    { label: "View Teachers", action: "view-teachers", icon: UserCheck, color: "outline-primary" },
-    { label: "View Parents", action: "view-parents", icon: Users, color: "outline-success" },
+    // { label: "View Teachers", action: "view-teachers", icon: UserCheck, color: "outline-primary" },
+    { label: "View Account", action: "view-account", icon: Users, color: "outline-success" },
     { label: "View Preschoolers", action: "view-preschoolers", icon: Baby, color: "outline-info" },
     { label: "View Groups", action: "view-groups", icon: School, color: "outline-warning" },
   ];

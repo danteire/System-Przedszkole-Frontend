@@ -4,7 +4,7 @@ import { api } from "~/utils/serviceAPI";
 import { Trash2, Edit, RefreshCw } from "lucide-react";
 import styles from "./View.module.css";
 
-interface Teacher {
+interface Account {
   id: number;
   email: string;
   firstName: string;
@@ -12,8 +12,8 @@ interface Teacher {
   accountType: string;
 }
 
-export default function ViewTeachers() {
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
+export default function ViewAccounts() {
+  const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,21 +32,21 @@ export default function ViewTeachers() {
 
       console.log("📤 Fetching accounts...");
 
-      const response = await api.get<Teacher[] | { data: Teacher[] }>("/accounts/teachers");
+      const response = await api.get<Account[] | { data: Account[] }>("/accounts");
 
       console.log("✅ Accounts fetched:", response);
 
-      let teachersData: Teacher[];
+      let accountsData: Account[];
       if (Array.isArray(response)) {
-        teachersData = response;
+        accountsData = response;
       } else if (response && 'data' in response && Array.isArray(response.data)) {
-        teachersData = response.data;
+        accountsData = response.data;
       } else {
         console.error("Unexpected response format:", response);
-        teachersData = [];
+        accountsData = [];
       }
 
-      setTeachers(teachersData);
+      setAccounts(accountsData);
     } catch (err: any) {
       console.error("❌ Failed to load accounts:", err);
 
@@ -72,7 +72,7 @@ export default function ViewTeachers() {
       await api.delete(`/teachers/${id}`);
       console.log(`✅ Account ${id} deleted`);
 
-      setTeachers(teachers.filter(t => t.id !== id));
+      setAccounts(accounts.filter(a => a.id !== id));
 
       alert("Account deleted successfully!");
     } catch (err: any) {
@@ -122,7 +122,7 @@ export default function ViewTeachers() {
     );
   }
 
-  if (teachers.length === 0) {
+  if (accounts.length === 0) {
     return (
       <div className={styles.empty}>
         <p>No accounts found</p>
@@ -135,9 +135,9 @@ export default function ViewTeachers() {
   }
 
   const stats = {
-    admin: teachers.filter(t => t.accountType === "ADMIN").length,
-    teacher: teachers.filter(t => t.accountType === "TEACHER").length,
-    parent: teachers.filter(t => t.accountType === "PARENT").length,
+    admin: accounts.filter(a => a.accountType === "ADMIN").length,
+    teacher: accounts.filter(a => a.accountType === "TEACHER").length,
+    parent: accounts.filter(a => a.accountType === "PARENT").length,
   };
 
   return (
@@ -146,7 +146,7 @@ export default function ViewTeachers() {
         <div className={styles.stats}>
           <div className={styles.statItem}>
             <span className={styles.statLabel}>Total:</span>
-            <span className={styles.statValue}>{teachers.length}</span>
+            <span className={styles.statValue}>{accounts.length}</span>
           </div>
           <div className={styles.statItem}>
             <span className={`${styles.statLabel} ${styles.adminColor}`}>Admins:</span>
@@ -180,29 +180,29 @@ export default function ViewTeachers() {
             </tr>
           </thead>
           <tbody>
-            {teachers.map((teacher) => (
-              <tr key={teacher.id}>
-                <td>{teacher.id}</td>
-                <td>{teacher.firstName}</td>
-                <td>{teacher.lastName}</td>
-                <td>{teacher.email}</td>
+            {accounts.map((account) => (
+              <tr key={account.id}>
+                <td>{account.id}</td>
+                <td>{account.firstName}</td>
+                <td>{account.lastName}</td>
+                <td>{account.email}</td>
                 <td>
-                  <span className={`${styles.badge} ${getBadgeClass(teacher.accountType)}`}>
-                    {teacher.accountType}
+                  <span className={`${styles.badge} ${getBadgeClass(account.accountType)}`}>
+                    {account.accountType}
                   </span>
                 </td>
                 <td>
                   <div className={styles.actions}>
                     <button
                       className={styles.actionBtn}
-                      onClick={() => alert(`Edit account ${teacher.id} - Not implemented yet`)}
+                      onClick={() => alert(`Edit account ${account.id} - Not implemented yet`)}
                       title="Edit account"
                     >
                       <Edit size={16} />
                     </button>
                     <button
                       className={styles.actionBtnDanger}
-                      onClick={() => handleDelete(teacher.id, `${teacher.firstName} ${teacher.lastName}`)}
+                      onClick={() => handleDelete(account.id, `${account.firstName} ${account.lastName}`)}
                       title="Delete account"
                     >
                       <Trash2 size={16} />
