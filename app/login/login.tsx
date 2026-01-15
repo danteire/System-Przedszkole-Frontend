@@ -4,7 +4,7 @@ import { api } from "../utils/serviceAPI";
 
 export async function clientLoader() {
   if (api.isAuthenticated()) {
-    throw redirect('/dashboard');
+    throw redirect('/home');
   }
   return {};
 }

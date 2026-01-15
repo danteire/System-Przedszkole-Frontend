@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { api } from '../utils/serviceAPI';
 import styles from '../commons/PaginatedTable.module.css';
+import { Button } from 'react-bootstrap';
 
 interface Student {
   id: number;
@@ -10,7 +11,7 @@ interface Student {
   groupId: number | null;
 }
 
-const PaginatedTable = () => {
+const AttendanceTable = () => {
   const [preschoolerData, setPreschoolerData] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -89,10 +90,10 @@ const PaginatedTable = () => {
 
   return (
     <div className={styles.wrapper}>
-      <h2 className={styles.title}>
-        Lista Przedszkolaków ({preschoolerData.length})
-      </h2>
-
+      <div className={styles.header}>
+        <h2 className={styles.title}>Lista Przedszkolaków</h2>
+      </div>
+      
       <table className={styles.table}>
         <thead>
           <tr>
@@ -143,4 +144,4 @@ const PaginatedTable = () => {
   );
 };
 
-export default PaginatedTable;
+export default AttendanceTable;

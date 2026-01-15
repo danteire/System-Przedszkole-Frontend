@@ -8,7 +8,7 @@ import {
 } from "react-router";
 
 import type { Route } from "./+types/root";
-import "./app.css";
+import "./commons/variables.css"
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 export const links: Route.LinksFunction = () => [

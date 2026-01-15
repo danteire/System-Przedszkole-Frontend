@@ -1,47 +1,51 @@
+/* app/commons/dashboard.module.css */
 .navbar {
-  background-color: #f8f9fa;
+  background: var(--bg-light);
   padding: 12px 0;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--color-gray-300);
+  box-shadow: var(--shadow-sm);
 }
 
 .brand {
-  font-size: 1.4rem;
-  font-weight: bold;
-  color: #333;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-gray-800);
   text-decoration: none;
 }
 
 .nav {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: var(--spacing-md);
 }
 
 .link {
-  color: #333;
-  font-size: 1rem;
+  color: var(--color-gray-800);
+  font-size: var(--font-size-base);
   text-decoration: none;
   cursor: pointer;
-  padding: 6px 10px;
-  border-radius: 6px;
-  transition: 0.2s;
+  padding: var(--spacing-sm) 10px;
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-base);
+  font-weight: var(--font-weight-medium);
 }
 
 .link:hover {
-  background-color: #e2e8f0;
+  background: var(--color-gray-200);
 }
 
 .logout {
-  background-color: #3182ce;
+  background: var(--color-primary-dark);
   border: none;
-  padding: 6px 14px;
-  font-size: 0.95rem;
-  color: white;
-  border-radius: 6px;
+  padding: var(--spacing-sm) 14px;
+  font-size: var(--font-size-sm);
+  color: var(--bg-white);
+  border-radius: var(--radius-sm);
   cursor: pointer;
-  transition: 0.2s;
+  transition: background var(--transition-base);
+  font-weight: var(--font-weight-medium);
 }
 
 .logout:hover {
-  background-color: #2b6cb0;
+  background: var(--color-primary-darker);
 }
