@@ -33,6 +33,7 @@ export default function ViewAccounts() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [mapParentEmail, setMapParentEmail] = useState<Map<number, string>>(new Map());
 
   useEffect(()=>{
       loadParents();
@@ -105,6 +106,8 @@ export default function ViewAccounts() {
             }
       
             setParents(accountsData);
+            setMapParentEmail(new Map(accountsData.map(parent => [parent.id, parent.email])));
+            console.log("✅ mapParentEmail set:", mapParentEmail);
           } catch (err: any) {
             console.error("❌ Failed to load Parents:", err);
       
@@ -188,7 +191,6 @@ export default function ViewAccounts() {
     }
   };
 
-
   if (isLoading) {
     return (
       <div className={styles.loading}>
@@ -243,6 +245,7 @@ export default function ViewAccounts() {
               <th>ID</th>
               <th>First Name</th>
               <th>Last Name</th>
+              <th>Group ID</th>
               <th>Parent Email</th>
               <th>Actions</th>
             </tr>
@@ -253,7 +256,12 @@ export default function ViewAccounts() {
                 <td>{account.id}</td>
                 <td>{account.firstName}</td>
                 <td>{account.lastName}</td>
-                <td>{account.parentId}</td>
+                <td>{account.groupId}</td>
+                <td>
+                  {account.parentId && mapParentEmail.has(account.parentId)
+                    ? mapParentEmail.get(account.parentId)
+                    : "No email/parent"}
+                </td>              
                 <td>
                   <div className={styles.actions}>
                     <button

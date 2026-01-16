@@ -23,8 +23,6 @@ const endpointMap: Record<AccountType, string> = {
         PARENT: "parent",
 };
 
-
-
 export default function AddAccountForm({ onSuccess }: AddAccountFormProps) {
   const [formData, setFormData] = useState<AccountFormData>({
     email: "",

@@ -1,3 +1,4 @@
+/* app/root.tsx */
 import {
   isRouteErrorResponse,
   Links,
@@ -8,8 +9,10 @@ import {
 } from "react-router";
 
 import type { Route } from "./+types/root";
-import "./commons/variables.css"
+import './styles/variables.css'; 
 import 'bootstrap/dist/css/bootstrap.min.css';
+
+import './styles/global.css'; 
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -64,10 +67,10 @@ export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
 
   return (
     <main className="pt-16 p-4 container mx-auto">
-      <h1>{message}</h1>
-      <p>{details}</p>
+      <h1 style={{ color: 'var(--color-danger)' }}>{message}</h1>
+      <p className="text-muted">{details}</p>
       {stack && (
-        <pre className="w-full p-4 overflow-x-auto">
+        <pre className="w-full p-4 overflow-x-auto card-custom">
           <code>{stack}</code>
         </pre>
       )}
