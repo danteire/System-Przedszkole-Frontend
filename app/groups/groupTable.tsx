@@ -3,8 +3,6 @@ import { Button } from 'react-bootstrap';
 import { api } from '../utils/serviceAPI';
 import styles from '../commons/PaginatedTable.module.css';
 import NewGroupModal from './groupsModal';
-
-// Import komponentu podrzędnego
 import PreschoolersList from './PreschoolersList';
 
 interface Group {
@@ -58,7 +56,6 @@ const GroupsTable = () => {
     fetchData();
   }, []);
 
-  // --- RENDEROWANIE WARUNKOWE ---
   if (selectedGroup) {
     return (
       <PreschoolersList 
@@ -69,7 +66,6 @@ const GroupsTable = () => {
     );
   }
 
-  // --- STANDARDOWE RENDEROWANIE TABELI GRUP ---
   
   if (loading) {
     return (
@@ -95,7 +91,6 @@ const GroupsTable = () => {
     );
   }
 
-  // Paginacja
   const totalPages = Math.ceil(groupsData.length / itemsPerPage);
   if (currentPage > totalPages && totalPages > 0) {
     setCurrentPage(totalPages);
@@ -143,7 +138,6 @@ const GroupsTable = () => {
                   </td>
                   <td className={styles.td} style={{ textAlign: 'center' }}>
                     
-                    {/* --- ZMIANA: PRZYCISK ZAMIAST LINKU --- */}
                     <Button 
                       variant="outline-primary" 
                       size="sm"
