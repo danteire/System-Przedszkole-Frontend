@@ -1,0 +1,322 @@
+/* app/routes/messages/MessagesPage.module.css */
+
+.messagesWrapper {
+  max-width: 1400px; /* Nieco szerszy dla widoku poczty */
+  margin: var(--spacing-3xl) auto;
+  padding: 0 var(--spacing-xl);
+  height: calc(100vh - 100px); /* Żeby poczta wypełniała ekran */
+  display: flex;
+  flex-direction: column;
+}
+
+/* Główny kontener z ciemnym gradientem */
+.mainSection {
+  background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+  border-radius: var(--radius-2xl);
+  padding: var(--spacing-xl);
+  box-shadow: 0 10px 40px rgba(45, 55, 72, 0.4);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden; /* Ważne dla scrollowania wewnątrz */
+}
+
+/* Nagłówek sekcji */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-lg);
+  color: var(--bg-white);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.title {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.subtitle {
+  font-size: var(--font-size-sm);
+  opacity: 0.8;
+  font-weight: normal;
+  margin-left: var(--spacing-sm);
+}
+
+/* Przyciski i Kontrolki */
+.controls {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.tabButton {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: var(--bg-white);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition: all var(--transition-slow);
+  font-weight: var(--font-weight-medium);
+}
+
+.tabButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.tabButton.active {
+  background: var(--bg-white);
+  color: #2d3748; /* Ciemny tekst na aktywnym */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.composeButton {
+  background: var(--gradient-success); /* Lub inny gradient z twojego systemu */
+  background-color: #48bb78; /* Fallback */
+  color: white;
+  border: none;
+  padding: var(--spacing-sm) var(--spacing-xl);
+  border-radius: var(--radius-lg);
+  font-weight: bold;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(72, 187, 120, 0.3);
+  transition: transform var(--transition-slow);
+}
+
+.composeButton:hover {
+  transform: translateY(-2px);
+}
+
+/* Układ Grid: Lista | Szczegóły */
+.contentGrid {
+  display: grid;
+  grid-template-columns: 350px 1fr;
+  gap: var(--spacing-lg);
+  flex: 1;
+  overflow: hidden; /* Zapobiega rozlewaniu się poza kontener */
+}
+
+/* Lista wiadomości (lewa kolumna) */
+.messagesList {
+  overflow-y: auto;
+  padding-right: var(--spacing-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+/* Pojedyncza karta wiadomości na liście - stylizowana jak .moduleCard */
+.messageCard {
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-md);
+  cursor: pointer;
+  transition: all var(--transition-slow);
+  position: relative;
+  overflow: hidden;
+  border-left: 4px solid transparent;
+}
+
+.messageCard:hover {
+  transform: translateX(4px); /* Przesunięcie w prawo zamiast w górę dla listy */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.messageCard.active {
+  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
+  border-left-color: #4a5568;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.msgHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-xs);
+}
+
+.sender {
+  font-weight: var(--font-weight-bold);
+  color: #2d3748;
+  font-size: var(--font-size-sm);
+}
+
+.date {
+  font-size: 0.75rem;
+  color: #718096;
+}
+
+.subject {
+  font-weight: var(--font-weight-semibold);
+  color: #4a5568;
+  margin-bottom: var(--spacing-xs);
+  display: block;
+}
+
+.preview {
+  font-size: var(--font-size-sm);
+  color: #718096;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Szczegóły wiadomości (prawa kolumna) */
+.messageDetail {
+  background: var(--bg-white);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
+  overflow-y: auto;
+  box-shadow: var(--shadow-md);
+  animation: slideIn var(--transition-slow);
+  display: flex;
+  flex-direction: column;
+}
+
+.detailHeader {
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: var(--spacing-lg);
+  margin-bottom: var(--spacing-lg);
+}
+
+.detailSubject {
+  font-size: var(--font-size-2xl);
+  color: #2d3748;
+  margin-bottom: var(--spacing-sm);
+}
+
+.detailMeta {
+  color: #718096;
+  font-size: var(--font-size-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.detailContent {
+  color: #2d3748;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  flex: 1;
+}
+
+.replyButton {
+  background: transparent;
+  border: 2px solid #4a5568;
+  color: #4a5568;
+  padding: var(--spacing-xs) var(--spacing-lg);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  font-weight: var(--font-weight-semibold);
+  transition: all var(--transition-slow);
+}
+
+.replyButton:hover {
+  background: #4a5568;
+  color: white;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #cbd5e0;
+  font-size: var(--font-size-xl);
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-xl);
+}
+
+/* Modal */
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(45, 55, 72, 0.8);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalCard {
+  background: var(--bg-white);
+  border-radius: var(--radius-2xl);
+  padding: var(--spacing-2xl);
+  width: 100%;
+  max-width: 600px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+  animation: slideIn var(--transition-slow);
+}
+
+.formGroup {
+  margin-bottom: var(--spacing-lg);
+}
+
+.label {
+  display: block;
+  margin-bottom: var(--spacing-xs);
+  font-weight: var(--font-weight-semibold);
+  color: #4a5568;
+}
+
+.input, .textarea, .select {
+  width: 100%;
+  padding: var(--spacing-md);
+  border: 2px solid #e2e8f0;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-md);
+  transition: border-color 0.2s;
+}
+
+.input:focus, .textarea:focus, .select:focus {
+  outline: none;
+  border-color: #4a5568;
+}
+
+.modalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xl);
+}
+
+.cancelButton {
+  background: transparent;
+  border: none;
+  color: #718096;
+  cursor: pointer;
+  font-weight: var(--font-weight-medium);
+  padding: var(--spacing-sm) var(--spacing-lg);
+}
+
+.submitButton {
+  background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+  color: white;
+  border: none;
+  padding: var(--spacing-sm) var(--spacing-xl);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  font-weight: bold;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+  .messageDetail {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    border-radius: 0;
+  }
+}
