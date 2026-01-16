@@ -60,6 +60,8 @@ export default function AddAccountForm({ onSuccess }: AddAccountFormProps) {
     }, []);  
     
     console.log("📧 Fetched email list for validation:", emailList);
+
+    
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);

@@ -1,23 +1,39 @@
-import { useEffect } from "react";
-import { Table } from "react-bootstrap";
-import { replace, Route, useNavigate } from "react-router";
+// app/routes/attendance/attendance.tsx
+import { useState } from "react";
 import DashBoard from "~/commons/dashboard";
-import AttendanceTable from "./attendenceTable";
+import GroupsList from "./GroupsList";
+import AttendanceView from "./AttendanceView";
 
-
-export function clientLoader() {
-  return null;
+export async function clientLoader() {
+  return {};
 }
 
 export default function AttendancePage() {
+  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
+
+  const handleGroupSelect = (groupId: number) => {
+    setSelectedGroupId(groupId);
+  };
+
+  const handleBackToGroups = () => {
+    setSelectedGroupId(null);
+  };
+
   return (
     <>
       <div className="container mx-auto max-w-4xl">
         <DashBoard />
       </div>
 
-      <div className="w-full px-4">
-        <AttendanceTable />
+      <div className="container mx-auto max-w-6xl mt-4">
+        {selectedGroupId === null ? (
+          <GroupsList onGroupSelect={handleGroupSelect} />
+        ) : (
+          <AttendanceView 
+            groupId={selectedGroupId} 
+            onBack={handleBackToGroups} 
+          />
+        )}
       </div>
     </>
   );

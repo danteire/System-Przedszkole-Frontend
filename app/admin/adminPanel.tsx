@@ -30,7 +30,6 @@ export default function AdminPanelPage() {
       <div className={styles.adminPanelContainer}>
         <AdminModules onAction={handleAction} activeAction={activeAction} />
         
-        {/* Wyświetl odpowiednią zawartość pod przyciskami */}
         {activeAction && (
           <AdminContent action={activeAction} onClose={handleClose} />
         )}
