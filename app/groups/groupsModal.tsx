@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { type ActionFunctionArgs } from "react-router"; // To jest teraz zbędne, ale zostawiamy import
 
 import "./newGroupsModal.css";
@@ -7,62 +7,63 @@ import { api } from '~/utils/serviceAPI';
 interface NewGroupModalProps {
   show: boolean;
   onHide: () => void;
+  occupiedIds: number[]; // Nowy prop z ID, które są już zajęte
 }
 
 interface GroupState {
   groupName: string;
   mainCaretakerId: number | string; // ID z inputa jest lepiej trzymać jako string
 }
+// Dodajemy nowy interfejs dla nauczyciela
+interface Teacher {
+  id: number;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
 
-export default function NewGroupModal({ show, onHide }: NewGroupModalProps) {
-  // Stan do przechowywania danych formularza
+export default function NewGroupModal({ show, onHide, occupiedIds }: NewGroupModalProps) {
   const [groupState, setGroupState] = useState<GroupState>({
     groupName: '',
-    mainCaretakerId: '',
+    mainCaretakerId: '', // To będzie teraz przechowywać ID z wybranego <option>
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  
+  // Zmiana: przechowujemy całe obiekty nauczycieli, nie tylko maile
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
 
-  if (!show) {
-    return null;
-  }
+  useEffect(() => {
+    if (show) {
+      fetchTeachers();
+    }
+  }, [show]);
 
-  const handleModalClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setGroupState({
-      ...groupState,
-      [e.target.name]: e.target.value,
-    });
+  const fetchTeachers = async () => {
+    try {
+      // Pobieramy pełne dane o kontach nauczycieli
+      const response = await api.get<Teacher[]>("/accounts/teachers");
+      setTeachers(response);
+    } catch (err) {
+      console.error("❌ Failed to fetch teachers:", err);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
-    setSubmitError(null);
-
-    // Walidacja i konwersja ID
-    const parsedId = parseInt(groupState.mainCaretakerId as string, 10);
-    if (isNaN(parsedId)) {
-        setSubmitError("ID Opiekuna musi być liczbą.");
-        setIsSubmitting(false);
+    if (!groupState.mainCaretakerId) {
+        setSubmitError("Wybierz opiekuna grupy.");
         return;
     }
 
-    const newGroup = { 
-        groupName: groupState.groupName, 
-        mainCaretakerId: parsedId 
-    };
-
+    setIsSubmitting(true);
     try {
-      const response = await api.post("/groups", newGroup);
-      console.log("Grupa utworzona:", response);
-      // Sukces: Zresetuj formularz, zamknij modal i odśwież dane u rodzica
+      await api.post("/groups", {
+        groupName: groupState.groupName,
+        mainCaretakerId: Number(groupState.mainCaretakerId)
+      });
       setGroupState({ groupName: '', mainCaretakerId: '' });
-      onHide(); 
-
+      onHide();
     } catch (error) {
       setSubmitError("Nie udało się utworzyć grupy.");
     } finally {
@@ -70,56 +71,59 @@ export default function NewGroupModal({ show, onHide }: NewGroupModalProps) {
     }
   };
 
+  if (!show) return null;
+
   return (
-    <>
-      <div className="modal-overlay" onClick={onHide}> 
-        <div className="modal-box" onClick={handleModalClick}>
-          <h2>Create New Group</h2>
+    <div className="modal-overlay" onClick={onHide}>
+      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+        <h2>Create New Group</h2>
+        {submitError && <p style={{ color: 'red' }}>{submitError}</p>}
+        
+        <form className="group-form" onSubmit={handleSubmit}>
+          <input 
+            type="text" 
+            name="groupName" 
+            placeholder="Nazwa grupy" 
+            required 
+            value={groupState.groupName}
+            onChange={(e) => setGroupState({...groupState, groupName: e.target.value})}
+          />
 
-          {submitError && <p style={{ color: 'red' }}>{submitError}</p>}
+          {/* ZMIANA: Zamiast inputa typu number, dajemy select */}
+          <select 
+            name="mainCaretakerId"
+            value={groupState.mainCaretakerId}
+            onChange={(e) => setGroupState({...groupState, mainCaretakerId: e.target.value})}
+            required
+            className="teacher-select"
+          >
+            <option value="">-- Wybierz Opiekuna --</option>
+            {teachers.map((teacher) => {
+              // Sprawdzamy, czy ten nauczyciel jest już opiekunem innej grupy
+              const isOccupied = occupiedIds.includes(teacher.id);
+
+              return (
+                <option 
+                  key={teacher.id} 
+                  value={teacher.id} 
+                  disabled={isOccupied} // Blokujemy wybór zajętego nauczyciela
+                  style={isOccupied ? { color: '#ccc' } : {}}
+                >
+                  {teacher.firstName} {teacher.lastName} 
+                  {isOccupied ? " (Już przypisany)" : ` (${teacher.email})`}
+                </option>
+              );
+            })}
+          </select>
           
-          {/* ZMIANA: Używamy natywnego formularza z handlerem handleSubmit */}
-          <form className="group-form" onSubmit={handleSubmit}> 
-            {/* ZMIANA: Dodano name, value i onChange */}
-            <input 
-                type="text" 
-                name="groupName" 
-                placeholder="Group name" 
-                required 
-                value={groupState.groupName}
-                onChange={handleChange}
-            />
-            {/* ZMIANA: Dodano name, value i onChange */}
-            <input 
-                type="number" 
-                name="mainCaretakerId" 
-                placeholder="Main CareTakerID" 
-                required 
-                value={groupState.mainCaretakerId}
-                onChange={handleChange}
-            />
-            
-            <div className="modal-actions">
-              <button
-                type="button"
-                className="modal-btn cancel"
-                onClick={onHide}
-                disabled={isSubmitting} // Wyłącz, gdy trwa wysyłanie
-              >
-                Cancel
-              </button>
-
-              <button 
-                type="submit" 
-                className="modal-btn submit"
-                disabled={isSubmitting} // Wyłącz, gdy trwa wysyłanie
-              >
-                {isSubmitting ? 'Creating...' : 'Create'}
-              </button>
-            </div>
-          </form>
-        </div>
+          <div className="modal-actions">
+            <button type="button" onClick={onHide} disabled={isSubmitting}>Anuluj</button>
+            <button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? 'Tworzenie...' : 'Stwórz'}
+            </button>
+          </div>
+        </form>
       </div>
-    </>
+    </div>
   );
 }

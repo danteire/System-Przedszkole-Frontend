@@ -2,8 +2,7 @@ import { useEffect } from "react";
 import { Button } from "react-bootstrap";
 import { replace, Route, useNavigate } from "react-router";
 import DashBoard from "~/commons/dashboard";
-import PaginatedTable from "~/groups/groupTable";
-import styles from '../commons/PaginatedTable.module.css';
+import GroupTable from "~/groups/groupTable";
 
 export function loader() {
   return null;
@@ -17,7 +16,7 @@ export default function GroupsPage() {
         <DashBoard />
       </div>
       <div className="w-full px-4">
-        <PaginatedTable />
+        <GroupTable />
       </div>
     </>
     );
