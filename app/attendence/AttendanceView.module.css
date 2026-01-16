@@ -256,3 +256,62 @@
     grid-template-columns: 1fr;
   }
 }
+/* Istniejące style... */
+
+.historyTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.historyTable th, .historyTable td {
+  padding: 12px 16px;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.historyTable th {
+  background-color: #f8fafc;
+  font-weight: 600;
+  color: #475569;
+}
+
+.historyRow {
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.historyRow:hover {
+  background-color: #f1f5f9;
+}
+
+.detailsBtn {
+  background: transparent;
+  color: #2563eb;
+  border: 1px solid #2563eb;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.detailsBtn:hover {
+  background: #2563eb;
+  color: white;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badgePRESENT { background-color: #dcfce7; color: #166534; }
+.badgeABSENT { background-color: #fee2e2; color: #991b1b; }
+.badgeLATE { background-color: #fef9c3; color: #854d0e; }
+.badgeEXCUSED { background-color: #e0f2fe; color: #075985; }
