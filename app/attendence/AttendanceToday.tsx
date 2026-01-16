@@ -75,25 +75,64 @@ export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Pro
       }
     }
   };
+const formatTime = (time: string | undefined | null): string | null => {
+    if (!time) return null;
+    // Jeśli format to HH:mm (np. 14:30), dodaj sekundy (:00)
+    if (time.length === 5) {
+      return `${time}:00`;
+    }
+    return time; // Jeśli już jest HH:mm:ss, zostaw bez zmian
+  };
 
   const handleSaveAll = async () => {
     setSaving(true);
     setSuccess(false);
+    
     try {
         const accountInfo = api.getAccountInfo();
-        const attendanceData = Array.from(attendance.values()).map(record => ({
-            ...record,
-            date: today,
-            recordedById: accountInfo?.id
+        console.log("🔍 [DEBUG] User Info:", accountInfo);
+
+        // Jawne budowanie obiektu DTO
+        const attendanceData = Array.from(attendance.values()).map(record => {
+            const formattedArrival = formatTime(record.arrivalTime);
+            const formattedDeparture = formatTime(record.departureTime);
+
+            const payload = {
+                date: today, 
+                status: record.status, 
+                arrivalTime: formattedArrival,  
+                departureTime: formattedDeparture, 
+                preschoolerId: Number(record.preschoolerId),
+                recordedById: Number(accountInfo?.id)
+            };
+
+            return payload;
+        });
+
+        console.log("📦 [DEBUG] Full Payload generated (Sample 0):", attendanceData[0]);
+
+        // Wysyłanie
+        await Promise.all(attendanceData.map(async (data, index) => {
+            console.log(`🚀 [DEBUG] Sending POST #${index} payload:`, JSON.stringify(data));
+            
+            try {
+                const response = await api.post("/attendance", data);
+                console.log(`✅ [DEBUG] Success POST #${index}`);
+                return response;
+            } catch (reqError: any) {
+                console.error(`❌ [DEBUG] Failed POST #${index}. Data:`, data);
+                console.error(`❌ [DEBUG] Error details:`, reqError.response?.data || reqError.message);
+                throw reqError;
+            }
         }));
-        
-        // Zapisywanie
-        await Promise.all(attendanceData.map(data => api.post("/attendance", data)));
-        
+
+        console.log("🏁 [DEBUG] All requests completed successfully.");
         setSuccess(true);
-        setTimeout(() => onBack(), 2000); // Automatyczny powrót po sukcesie
+        setTimeout(() => onBack(), 2000);
+
     } catch (err: any) {
-        setError("Nie udało się zapisać obecności");
+        console.error("🔥 [DEBUG] Major Error in handleSaveAll:", err);
+        setError("Nie udało się zapisać obecności. Sprawdź konsolę.");
     } finally {
         setSaving(false);
     }
@@ -112,7 +151,7 @@ export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Pro
             
             <button 
                 onClick={onHistoryClick} 
-                className={styles.historyButton} // Upewnij się, że masz tę klasę w CSS
+                className={styles.historyButton} 
                 style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '0.5rem 1rem', border: '1px solid #ccc', borderRadius: '0.375rem', background: '#fff', cursor: 'pointer' }}
             >
                 <Calendar size={16} /> Historia obecności grupy

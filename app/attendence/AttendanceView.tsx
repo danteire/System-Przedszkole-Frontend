@@ -3,6 +3,7 @@ import { useState } from "react";
 import AttendanceToday from "./AttendanceToday";
 import HistoryDatesTable from "./HistoryDatesTable";
 import HistoryDetailsTable from "./HistoryDetailsTable";
+import type { AttendanceRecord } from "./attendanceTypes"; // Upewnij się, że ścieżka do typu jest poprawna
 
 interface AttendanceViewProps {
   groupId: number;
@@ -13,15 +14,22 @@ type ViewMode = 'today' | 'history_dates' | 'history_details';
 
 export default function AttendanceView({ groupId, onBack }: AttendanceViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('today');
+  
+  // Stan dla wybranej daty
   const [selectedHistoryDate, setSelectedHistoryDate] = useState<string | null>(null);
+  
+  // NOWY STAN: Przechowuje rekordy obecności dla wybranej daty (żeby nie pobierać ich 2x)
+  const [selectedHistoryRecords, setSelectedHistoryRecords] = useState<AttendanceRecord[]>([]);
 
   // 1. Widok Historii (Lista dat)
   if (viewMode === 'history_dates') {
     return (
         <HistoryDatesTable 
             groupId={groupId} 
-            onSelectDate={(date) => {
+            // ZMIANA: Odbieramy teraz dwa argumenty: datę i przefiltrowane rekordy
+            onSelectDate={(date, records) => {
                 setSelectedHistoryDate(date);
+                setSelectedHistoryRecords(records); // Zapisujemy rekordy w stanie
                 setViewMode('history_details');
             }}
             onBack={() => setViewMode('today')}
@@ -35,6 +43,7 @@ export default function AttendanceView({ groupId, onBack }: AttendanceViewProps)
           <HistoryDetailsTable 
             groupId={groupId}
             date={selectedHistoryDate}
+            records={selectedHistoryRecords} // ZMIANA: Przekazujemy gotowe dane
             onBack={() => setViewMode('history_dates')}
           />
       );
