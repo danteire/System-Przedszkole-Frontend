@@ -245,137 +245,143 @@ class ApiClient {
     this.failedQueue = [];
   }
 
+// ============================================
+  // REQUEST (ZMODYFIKOWANA)
   // ============================================
-  // REQUEST
-  // ============================================
 
- // utils/serviceAPI.ts
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {},
+    responseType: 'json' | 'blob' = 'json' // ← MODYFIKACJA: Dodano typ odpowiedzi
+  ): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    const headers = this.getHeaders(options.headers);
+    const method = options.method || 'GET';
 
-private async request<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const url = `${this.baseUrl}${endpoint}`;
-  const headers = this.getHeaders(options.headers);
-  const method = options.method || 'GET';
-
-  console.log(`📤 Request: ${method} ${endpoint}`);
-
-  try {
-    let response = await fetch(url, {
-      ...options,
-      headers,
-      credentials: 'include',
-    });
-
-    // 401 = Unauthorized (brak dostępu do zasobu)
-    if (response.status === 401) {
-      console.log('⚠️ 401 Unauthorized - Access denied to this resource');
-      await this.logErrorResponse(response, endpoint, method);
-      
-      const error = await this.createError(response, endpoint, method);
-      throw error;
+    // ← MODYFIKACJA: Obsługa FormData (Upload)
+    // Jeśli wysyłamy plik, przeglądarka sama musi ustawić Content-Type z "boundary".
+    // Musimy usunąć 'application/json' dodane przez getHeaders.
+    if (options.body instanceof FormData) {
+        delete headers['Content-Type'];
     }
 
-    // 403 = Forbidden (token wygasł lub nieprawidłowy)
-    if (response.status === 403) {
-      console.log('⚠️ 403 Forbidden - Token expired or invalid');
+    console.log(`📤 Request: ${method} ${endpoint}`);
 
-      if (!this.isRefreshing) {
-        this.isRefreshing = true;
+    try {
+      let response = await fetch(url, {
+        ...options,
+        headers,
+        credentials: 'include',
+      });
 
-        try {
-          const newAccessToken = await this.refreshAccessToken();
-          
-          this.isRefreshing = false;
-          this.processQueue(null, newAccessToken);
-
-          console.log(`🔄 Retrying request: ${method} ${endpoint}`);
-          
-          const newHeaders = this.getHeaders(options.headers);
-          response = await fetch(url, {
-            ...options,
-            headers: newHeaders,
-            credentials: 'include',
-          });
-
-          // Jeśli nadal 403, wyloguj
-          if (response.status === 403) {
-            console.error('❌ Still 403 after refresh - Logging out');
-            await this.logErrorResponse(response, endpoint, method);
-            
-            this.clearToken();
-            this.clearAccountInfo();
-            
-            if (typeof window !== 'undefined') {
-              alert('Your session has expired. Please log in again.');
-              window.location.href = '/';
-            }
-            
-            throw new Error('Session expired');
-          }
-
-        } catch (refreshError) {
-          this.isRefreshing = false;
-          this.processQueue(refreshError, null);
-          
-          // Wyloguj przy błędzie refresh
-          this.clearToken();
-          this.clearAccountInfo();
-          
-          if (typeof window !== 'undefined') {
-            alert('Your session has expired. Please log in again.');
-            window.location.href = '/';
-          }
-          
-          throw refreshError;
-        }
-      } else {
-        console.log('⏳ Waiting for token refresh...');
-
-        const newAccessToken = await new Promise<string>((resolve, reject) => {
-          this.failedQueue.push({ resolve, reject });
-        });
-
-        console.log(`🔄 Retrying queued request: ${method} ${endpoint}`);
-
-        const newHeaders = this.getHeaders(options.headers);
-        response = await fetch(url, {
-          ...options,
-          headers: newHeaders,
-          credentials: 'include',
-        });
+      // 401 = Unauthorized
+      if (response.status === 401) {
+        console.log('⚠️ 401 Unauthorized - Access denied to this resource');
+        await this.logErrorResponse(response, endpoint, method);
+        const error = await this.createError(response, endpoint, method);
+        throw error;
       }
-    }
 
-    // Obsługa innych błędów
-    if (!response.ok) {
-      await this.logErrorResponse(response, endpoint, method);
-      const error = await this.createError(response, endpoint, method);
-      throw error;
-    }
+      // 403 = Forbidden (Refresh Token Logic)
+      if (response.status === 403) {
+        console.log('⚠️ 403 Forbidden - Token expired or invalid');
 
-    console.log(`✅ Response: ${method} ${endpoint} - ${response.status}`);
-    
-    const contentLength = response.headers.get('content-length');
-    if (contentLength === '0' || response.status === 204) {
-      return {} as T;
-    }
-    
-    return response.json();
+        if (!this.isRefreshing) {
+          this.isRefreshing = true;
 
-  } catch (error) {
-    if (error instanceof TypeError) {
-      console.group('❌ Network Error');
-      console.error('Endpoint:', `${method} ${endpoint}`);
-      console.error('Error:', error.message);
-      console.error('Possible causes: Network timeout, CORS, or server is down');
-      console.groupEnd();
+          try {
+            const newAccessToken = await this.refreshAccessToken();
+            
+            this.isRefreshing = false;
+            this.processQueue(null, newAccessToken);
+
+            console.log(`🔄 Retrying request: ${method} ${endpoint}`);
+            
+            const newHeaders = this.getHeaders(options.headers);
+            // ← MODYFIKACJA: Ponowne usunięcie Content-Type przy retry
+            if (options.body instanceof FormData) {
+                delete newHeaders['Content-Type'];
+            }
+
+            response = await fetch(url, {
+              ...options,
+              headers: newHeaders,
+              credentials: 'include',
+            });
+
+            if (response.status === 403) {
+              // ... (reszta logiki błędu bez zmian)
+               console.error('❌ Still 403 after refresh - Logging out');
+               await this.logErrorResponse(response, endpoint, method);
+               this.clearToken();
+               this.clearAccountInfo();
+               if (typeof window !== 'undefined') window.location.href = '/';
+               throw new Error('Session expired');
+            }
+
+          } catch (refreshError) {
+             // ... (reszta logiki błędu bez zmian)
+             this.isRefreshing = false;
+             this.processQueue(refreshError, null);
+             this.clearToken();
+             this.clearAccountInfo();
+             if (typeof window !== 'undefined') window.location.href = '/';
+             throw refreshError;
+          }
+        } else {
+           // ... (kolejkowanie zapytań bez zmian)
+           console.log('⏳ Waiting for token refresh...');
+           await new Promise<string>((resolve, reject) => {
+             this.failedQueue.push({ resolve, reject });
+           });
+           
+           console.log(`🔄 Retrying queued request: ${method} ${endpoint}`);
+           const newHeaders = this.getHeaders(options.headers);
+           // ← MODYFIKACJA: Ponowne usunięcie Content-Type przy retry z kolejki
+           if (options.body instanceof FormData) {
+               delete newHeaders['Content-Type'];
+           }
+           
+           response = await fetch(url, {
+             ...options,
+             headers: newHeaders,
+             credentials: 'include',
+           });
+        }
+      }
+
+      // Obsługa innych błędów
+      if (!response.ok) {
+        await this.logErrorResponse(response, endpoint, method);
+        const error = await this.createError(response, endpoint, method);
+        throw error;
+      }
+
+      console.log(`✅ Response: ${method} ${endpoint} - ${response.status}`);
+      
+      // ← MODYFIKACJA: Obsługa pobierania pliku (Blob)
+      if (responseType === 'blob') {
+          return response.blob() as unknown as T;
+      }
+
+      const contentLength = response.headers.get('content-length');
+      if (contentLength === '0' || response.status === 204) {
+        return {} as T;
+      }
+      
+      return response.json();
+
+    } catch (error) {
+       // ... (obsługa błędów sieciowych bez zmian)
+       if (error instanceof TypeError) {
+         console.group('❌ Network Error');
+         console.error('Endpoint:', `${method} ${endpoint}`);
+         console.error('Error:', error.message);
+         console.groupEnd();
+       }
+       throw error;
     }
-    
-    throw error;
   }
-}
 
   // ============================================
   // PUBLICZNE METODY HTTP
@@ -419,6 +425,20 @@ private async request<T>(
     });
   }
 
+  async upload<T>(endpoint: string, formData: FormData, options?: RequestInit): Promise<T> {
+    return this.request<T>(endpoint, {
+      ...options,
+      method: 'POST',
+      body: formData,
+    });
+  }
+
+  async download(endpoint: string, options?: RequestInit): Promise<Blob> {
+    return this.request<Blob>(endpoint, {
+      ...options,
+      method: 'GET',
+    }, 'blob'); // ← Przekazujemy flagę 'blob'
+  }
   // ============================================
   // AUTENTYKACJA
   // ============================================

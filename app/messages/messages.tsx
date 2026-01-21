@@ -26,9 +26,8 @@ export default function MessagesPage() {
   const [newMsgRecipient, setNewMsgRecipient] = useState<string>("");
   const [newMsgSubject, setNewMsgSubject] = useState("");
   const [newMsgContent, setNewMsgContent] = useState("");
-  const [files, setFiles] = useState<File[]>([]); // NOWE: Lista plików do wysłania
+  const [files, setFiles] = useState<File[]>([]); 
 
-  // Ref do ukrytego inputa pliku
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // --- 1. Pobieranie wiadomości (API) ---
@@ -80,14 +79,39 @@ export default function MessagesPage() {
       fetchRecipients();
   }, []);
 
-  // --- 3. Wysyłanie wiadomości (Dwuetapowe) ---
+  // --- NOWE: Funkcja pobierająca załączniki po kliknięciu ---
+  const handleMessageClick = async (msg: MessageDTO) => {
+    setSelectedMessage({ ...msg, attachments: [] });
+
+    try {
+        const attachmentsData = await api.get<MessageAttachmentDTO[]>(`/message-attachments/message/${msg.id}`);
+
+        if (Array.isArray(attachmentsData) && attachmentsData.length > 0) {
+            console.log("Znaleziono załączniki:", attachmentsData);
+            
+            setSelectedMessage(prev => {
+                if (prev && prev.id === msg.id) {
+                    return { ...prev, attachments: attachmentsData };
+                }
+                return prev;
+            });
+        } else {
+            console.log("Brak załączników dla tej wiadomości.");
+        }
+    } catch (error) {
+        // Jeśli 404 lub inny błąd -> po prostu nie pokazujemy załączników, nie blokujemy UI
+        console.log("Nie udało się pobrać informacji o załącznikach (może ich nie być).");
+    }
+  };
+
+
+  // --- 3. Wysyłanie wiadomości ---
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newMsgRecipient || !currentUserId) return;
     
     setSending(true);
     try {
-        // KROK 1: Utwórz wiadomość (JSON)
         const payload = {
             senderId: currentUserId,
             recipientId: parseInt(newMsgRecipient),
@@ -95,26 +119,19 @@ export default function MessagesPage() {
             content: newMsgContent,
         };
 
-        // Backend musi zwracać obiekt utworzonej wiadomości z ID!
         const createdMessage = await api.post<MessageDTO>("/messages", payload);
         
-        // KROK 2: Jeśli są pliki, wyślij je jeden po drugim
         if (files.length > 0 && createdMessage?.id) {
             await Promise.all(files.map(async (file) => {
                 const formData = new FormData();
                 formData.append("file", file);
-                
-                // Używamy endpointu: POST /api/message-attachments/upload/{messageId}
-                // Uwaga: api.post musi obsługiwać FormData (nie ustawiać Content-Type: application/json)
-                // Większość klientów HTTP (axios/fetch wrapper) wykrywa FormData automatycznie.
-                await api.post(`/message-attachments/upload/${createdMessage.id}`, formData);
+                await api.upload<MessageAttachmentDTO>(`/message-attachments/upload/${createdMessage.id}`, formData);
             }));
         }
         
         setIsComposeOpen(false);
         resetForm();
         
-        // Odśwież listę
         if (activeTab === "sent") {
             fetchMessages();
         } else {
@@ -123,59 +140,39 @@ export default function MessagesPage() {
         
     } catch (error) {
         console.error("Failed to send message:", error);
-        alert("Nie udało się wysłać wiadomości lub załączników.");
+        alert("Nie udało się wysłać wiadomości.");
     } finally {
         setSending(false);
     }
   };
 
-  // --- 4. Pobieranie załącznika ---
+  // --- 4. Pobieranie pliku ---
   const handleDownload = async (attachment: MessageAttachmentDTO) => {
       try {
-          // Musimy pobrać plik jako BLOB.
-          // Jeśli Twój `api.get` parsuje zawsze JSONa, trzeba użyć natywnego fetch lub dedykowanej metody.
-          // Poniżej przykład z założeniem, że api ma metodę do pobierania bloba lub używamy fetch z tokenem.
-          
-          // Przykład (dostosuj do swojego utilsa api):
-          const token = localStorage.getItem("token"); // Zakładam, że tak trzymasz token
-          const response = await fetch(`http://localhost:8080/api/message-attachments/download/${attachment.id}`, {
-              headers: {
-                  'Authorization': `Bearer ${token}`
-              }
-          });
-
-          if (!response.ok) throw new Error("Download failed");
-
-          const blob = await response.blob();
-          const url = window.URL.createObjectURL(blob);
-          
-          // Tworzenie tymczasowego linku do kliknięcia
-          const link = document.createElement('a');
-          link.href = url;
-          link.setAttribute('download', attachment.fileName); // Wymuszenie nazwy pliku
-          document.body.appendChild(link);
-          link.click();
-          
-          // Sprzątanie
-          link.remove();
-          window.URL.revokeObjectURL(url);
-
-      } catch (error) {
-          console.error("Błąd pobierania pliku:", error);
-          alert("Nie udało się pobrać pliku.");
+        const blob = await api.download('/message-attachments/download/' + attachment.id);
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = attachment.fileName;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }, 100);
+      } catch (e) {
+        console.error("Błąd pobierania", e);
+        alert("Nie udało się pobrać pliku.");
       }
   };
 
-  // --- Obsługa plików w formularzu ---
+  // --- Helpersy formularza ---
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files && e.target.files.length > 0) {
           const newFiles = Array.from(e.target.files);
           setFiles((prev) => [...prev, ...newFiles]);
       }
-      // Reset inputa, żeby można było dodać ten sam plik ponownie jeśli usunięto
-      if (fileInputRef.current) {
-          fileInputRef.current.value = "";
-      }
+      if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const removeFile = (indexToRemove: number) => {
@@ -185,7 +182,6 @@ export default function MessagesPage() {
   const handleReply = (msg: MessageDTO) => {
     setIsComposeOpen(true);
     const replyToId = activeTab === 'inbox' ? msg.senderId : msg.recipientId;
-    
     setNewMsgRecipient(replyToId.toString());
     setNewMsgSubject(msg.subject.startsWith("Re:") ? msg.subject : `Re: ${msg.subject}`);
     setNewMsgContent(`\n\n--- W odpowiedzi na ---\n${msg.content}`);
@@ -195,7 +191,7 @@ export default function MessagesPage() {
     setNewMsgRecipient("");
     setNewMsgSubject("");
     setNewMsgContent("");
-    setFiles([]); // Reset plików
+    setFiles([]); 
   };
 
   return (
@@ -252,7 +248,8 @@ export default function MessagesPage() {
                 messages.map((msg) => (
                   <div
                     key={msg.id}
-                    onClick={() => setSelectedMessage(msg)}
+                    // ZMIANA: Tutaj używamy nowej funkcji handleMessageClick
+                    onClick={() => handleMessageClick(msg)}
                     className={`${styles.messageCard} ${selectedMessage?.id === msg.id ? styles.active : ""}`}
                   >
                     <div className={styles.msgHeader}>
@@ -265,9 +262,8 @@ export default function MessagesPage() {
                     </div>
                     <span className={styles.subject}>
                         {msg.subject}
-                        {msg.attachments && msg.attachments.length > 0 && (
-                            <Paperclip size={12} style={{marginLeft: 5, color: '#718096'}}/>
-                        )}
+                        {/* Opcjonalnie: ikona spinacza jeśli wiadomość ma flagę 'hasAttachments' z backendu
+                            Jeśli backend tego nie zwraca na liście, ikonka pojawi się dopiero po kliknięciu */}
                     </span>
                     <div className={styles.preview}>{msg.content}</div>
                   </div>
@@ -309,7 +305,8 @@ export default function MessagesPage() {
                   {selectedMessage.content}
                 </div>
                 
-                {/* SEKCJA WYŚWIETLANIA I POBIERANIA ZAŁĄCZNIKÓW */}
+                {/* SEKCJA ZAŁĄCZNIKÓW */}
+                {/* Wyświetli się tylko jeśli api.get(...) zwróciło listę */}
                 {selectedMessage.attachments && selectedMessage.attachments.length > 0 && (
                     <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
                         <strong style={{display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '10px'}}>
@@ -320,7 +317,6 @@ export default function MessagesPage() {
                                <div 
                                    key={att.id} 
                                    onClick={() => handleDownload(att)}
-                                   className={styles.attachmentChip} // Dodaj styl w CSS lub inline
                                    style={{
                                        display: 'flex', alignItems: 'center', gap: '8px',
                                        background: '#ebf8ff', border: '1px solid #bee3f8',
@@ -328,7 +324,7 @@ export default function MessagesPage() {
                                        cursor: 'pointer', transition: 'background 0.2s',
                                        color: '#2b6cb0', fontSize: '0.9rem'
                                    }}
-                                   title="Kliknij, aby pobrać"
+                                   title={`Pobierz: ${att.fileName}`}
                                >
                                    <Download size={14} />
                                    <span style={{maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>
@@ -349,13 +345,14 @@ export default function MessagesPage() {
         </div>
       </div>
 
-      {/* --- MODAL NOWEJ WIADOMOŚCI --- */}
+      {/* MODAL (bez zmian) */}
       {isComposeOpen && (
         <div className={styles.modalOverlay}>
           <div className={styles.modalCard}>
             <h2 className={styles.detailSubject} style={{marginBottom: '20px'}}>Nowa wiadomość</h2>
             <form onSubmit={handleSendMessage}>
-              <div className={styles.formGroup}>
+               {/* ... (Reszta formularza bez zmian) ... */}
+               <div className={styles.formGroup}>
                 <label className={styles.label}>Odbiorca</label>
                 <select
                   required
@@ -396,7 +393,6 @@ export default function MessagesPage() {
                 />
               </div>
 
-              {/* SEKCJA DODAWANIA PLIKÓW */}
               <div className={styles.formGroup}>
                   <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px'}}>
                     <label className={styles.label} style={{marginBottom: 0}}>Załączniki</label>
@@ -413,7 +409,6 @@ export default function MessagesPage() {
                     </button>
                   </div>
                   
-                  {/* Ukryty input */}
                   <input 
                       type="file" 
                       multiple 
@@ -422,7 +417,6 @@ export default function MessagesPage() {
                       onChange={handleFileSelect}
                   />
 
-                  {/* Lista wybranych plików */}
                   {files.length > 0 && (
                       <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px'}}>
                           {files.map((file, idx) => (
