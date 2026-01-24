@@ -1,4 +1,3 @@
-// app/routes/adminPanel/forms/AddAccountForm.tsx
 import { useState, useEffect } from "react";
 import { api } from "~/utils/serviceAPI";
 import styles from "./Form.module.css";
@@ -18,24 +17,23 @@ interface AccountFormData {
 type AccountType = "TEACHER" | "ADMIN" | "PARENT";
 
 const endpointMap: Record<AccountType, string> = {
-        TEACHER: "teacher",
-        ADMIN: "admin",
-        PARENT: "parent",
+  TEACHER: "teacher",
+  ADMIN: "admin",
+  PARENT: "parent",
 };
 
 export default function AddAccountForm({ onSuccess }: AddAccountFormProps) {
-  const [formData, setFormData] = useState<AccountFormData>({
-    email: "",
-    password: "",
-    firstName: "",
-    lastName: "",
-    accountType: "",
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [emailList, setEmailList] = useState<string[]>([]);
-  const accountTypes: { value: AccountType; label: string; description: string }[] = [
+  // Sprawdź rolę zalogowanego użytkownika
+  const isTeacher = api.isTeacher();
+  const isAdmin = api.isAdmin();
+
+  // Dostępne typy kont w zależności od roli
+  const allAccountTypes: { value: AccountType; label: string; description: string }[] = [
+    { 
+      value: "PARENT", 
+      label: "Parent", 
+      description: "Can view their children's information" 
+    },
     { 
       value: "TEACHER", 
       label: "Teacher", 
@@ -46,20 +44,37 @@ export default function AddAccountForm({ onSuccess }: AddAccountFormProps) {
       label: "Administrator", 
       description: "Full access to all system features" 
     },
-    { 
-      value: "PARENT", 
-      label: "Parent", 
-      description: "Can view their children's information" 
-    },
   ];
 
-    useEffect(() => {
-        getEmailList().then(emails => setEmailList(emails));
-    }, []);  
-    
-    console.log("📧 Fetched email list for validation:", emailList);
+  // Filtrujemy opcje
+  const availableAccountTypes = allAccountTypes.filter(type => {
+      if (isAdmin) return true; // Admin widzi wszystko
+      if (isTeacher) {
+          // Teacher widzi tylko Parent
+          return type.value === "PARENT";
+      }
+      return false;
+  });
 
+  const [formData, setFormData] = useState<AccountFormData>({
+    email: "",
+    password: "",
+    firstName: "",
+    lastName: "",
+    accountType: availableAccountTypes[0]?.value || "", // Domyślnie pierwsza dostępna opcja
+  });
+  
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [emailList, setEmailList] = useState<string[]>([]);
+
+  useEffect(() => {
+    getEmailList().then(emails => setEmailList(emails));
+  }, []);  
     
+  console.log("📧 Fetched email list for validation:", emailList);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -109,6 +124,13 @@ export default function AddAccountForm({ onSuccess }: AddAccountFormProps) {
       return;
     }
 
+    // Dodatkowe zabezpieczenie przed "sprytnym" użytkownikiem (frontend validation)
+    if (isTeacher && formData.accountType === "ADMIN") {
+        setError("You do not have permission to create Admin accounts.");
+        setIsLoading(false);
+        return;
+    }
+
     console.log("📤 Creating account with data:", {
       ...formData,
       password: "***hidden***",
@@ -119,13 +141,10 @@ export default function AddAccountForm({ onSuccess }: AddAccountFormProps) {
         throw new Error("You are not authenticated. Please log in again.");
       }
 
-      if (!api.isAdmin()) {
-        throw new Error("You don't have admin permissions.");
-      }
-
+      // Endpoint (zakładam, że backend obsługuje /accounts uniwersalnie lub wymaga ról)
       const endpoint = endpointMap[formData.accountType as AccountType];
       
-      console.log(`📤 Sending POST to /accounts/${endpoint}`);
+      console.log(`📤 Sending POST to /accounts (Type: ${formData.accountType})`);
 
       const response = await api.post(`/accounts`, {
         email: formData.email.trim(),
@@ -145,8 +164,11 @@ export default function AddAccountForm({ onSuccess }: AddAccountFormProps) {
         password: "",
         firstName: "",
         lastName: "",
-        accountType: "TEACHER",
+        accountType: availableAccountTypes[0]?.value || "",
       });
+
+      // Odśwież listę emaili
+      getEmailList().then(emails => setEmailList(emails));
 
       setTimeout(() => {
         onSuccess();
@@ -159,7 +181,7 @@ export default function AddAccountForm({ onSuccess }: AddAccountFormProps) {
         setError("Access denied. You don't have permission to create accounts.");
       } 
       else if (err.status === 403) {
-        setError("Your session has expired. Redirecting to login...");
+        setError("Your session has expired or insufficient permissions.");
       } 
       else if (err.status === 400) {
         setError(err.data?.message || "Invalid data. Please check your input.");
@@ -180,22 +202,17 @@ export default function AddAccountForm({ onSuccess }: AddAccountFormProps) {
       ...formData,
       [e.target.name]: e.target.value,
     });
-    console.log("🔄 Form data updated:", {
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
     if (error) setError(null);
   };
 
   const getAccountTypeDescription = (type: string) => {
-    return accountTypes.find(at => at.value === type)?.description || "";
+    return availableAccountTypes.find(at => at.value === type)?.description || "";
   };
 
   const getAccountTypeLabel = (type: string) => {
-    const accountType = accountTypes.find(at => at.value === type);
+    const accountType = availableAccountTypes.find(at => at.value === type);
     return accountType?.label || "Account";
   };
-
 
   async function getEmailList(): Promise<string[]> {
     interface AccountDTO {
@@ -207,15 +224,13 @@ export default function AddAccountForm({ onSuccess }: AddAccountFormProps) {
     }
     try {
         const response = await api.get<AccountDTO[]>("/accounts");
-        return response.map((account: AccountDTO) => account.email);
+        return response.map((account: AccountDTO) => account.email.toLowerCase());
     } catch (err) {
         console.error("❌ Failed to fetch email list:", err);
         return [];
     }
-
-
-
   }
+
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
       {error && (
@@ -317,7 +332,7 @@ export default function AddAccountForm({ onSuccess }: AddAccountFormProps) {
           disabled={isLoading}
           className={styles.select}
         >
-          {accountTypes.map((type) => (
+          {availableAccountTypes.map((type) => (
             <option key={type.value} value={type.value}>
               {type.label}
             </option>

@@ -1,14 +1,14 @@
 // app/routes/attendance/components/AttendanceToday.tsx
 import { useState, useEffect } from "react";
 import { api } from "~/utils/serviceAPI";
-import { ArrowLeft, Check, Clock, RefreshCw, Save, X, Calendar } from "lucide-react";
+import { ArrowLeft, Clock, RefreshCw, Save, Calendar } from "lucide-react";
 import styles from "./AttendanceView.module.css";
 import type { AttendanceRecord, Preschooler, Group } from "./attendanceTypes";
 
 interface Props {
   groupId: number;
-  onBack: () => void; // Powrót do listy grup
-  onHistoryClick: () => void; // Przejście do historii
+  onBack: () => void;
+  onHistoryClick: () => void;
 }
 
 export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Props) {
@@ -20,42 +20,78 @@ export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Pro
   const [success, setSuccess] = useState(false);
   const [group, setGroup] = useState<Group>();
 
+  // YYYY-MM-DD
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
     const loadData = async () => {
         setLoading(true);
         try {
-            // Równoległe pobieranie
-            const [groupRes, preschoolersRes] = await Promise.all([
+            // 1. Pobieramy równolegle: Dane grupy, Listę dzieci, Obecności z dzisiaj
+            // Używamy endpointu getByDate, a potem przefiltrujemy po ID dzieci z tej grupy
+            const [groupRes, preschoolersRes, todayAttendanceRes] = await Promise.all([
                 api.get<Group>(`/groups/${groupId}`),
-                api.get<Preschooler[]>(`/preschoolers/group/${groupId}`)
+                api.get<Preschooler[]>(`/preschoolers/group/${groupId}`),
+                api.get<AttendanceRecord[]>(`/attendance/date/${today}`)
             ]);
 
             setGroup(groupRes);
             const pData = Array.isArray(preschoolersRes) ? preschoolersRes : [];
             setPreschoolers(pData);
 
-            // Inicjalizacja mapy obecności
-            const initialAttendance = new Map<number, AttendanceRecord>();
-            pData.forEach(child => {
-                initialAttendance.set(child.id, {
-                preschoolerId: child.id,
-                status: "PRESENT",
-                arrivalTime: null,
-                departureTime: null,
+            // 2. Przygotowujemy mapę istniejących rekordów dla łatwego dostępu
+            // Filtrujemy todayAttendanceRes, aby mieć pewność, że to rekordy dzieci z naszej grupy
+            // (zakładając, że endpoint /attendance/date/{date} zwraca wszystkich w przedszkolu)
+            const existingRecordsMap = new Map<number, AttendanceRecord>();
+            
+            if (Array.isArray(todayAttendanceRes)) {
+                todayAttendanceRes.forEach(record => {
+                    // Sprawdzamy, czy ten rekord dotyczy dziecka z aktualnej listy pData
+                    if (pData.some(child => child.id === record.preschoolerId)) {
+                        existingRecordsMap.set(record.preschoolerId, record);
+                    }
                 });
+            }
+
+            // 3. Budujemy stan formularza
+            const initialAttendance = new Map<number, AttendanceRecord>();
+            
+            pData.forEach(child => {
+                const existing = existingRecordsMap.get(child.id);
+
+                if (existing) {
+                    // --- SCENARIUSZ EDYCJI ---
+                    // Mamy rekord z bazy (ma ID), używamy jego danych
+                    initialAttendance.set(child.id, {
+                        ...existing,
+                        // Input type="time" potrzebuje formatu HH:mm. Backend może zwracać HH:mm:ss
+                        arrivalTime: existing.arrivalTime ? existing.arrivalTime.substring(0, 5) : null,
+                        departureTime: existing.departureTime ? existing.departureTime.substring(0, 5) : null,
+                    });
+                } else {
+                    // --- SCENARIUSZ TWORZENIA ---
+                    // Brak rekordu, ustawiamy domyślne "PRESENT"
+                    initialAttendance.set(child.id, {
+                        preschoolerId: child.id,
+                        status: "PRESENT",
+                        arrivalTime: null,
+                        departureTime: null,
+                        // Ważne: brak pola 'id' oznacza, że to nowy rekord
+                    });
+                }
             });
+
             setAttendance(initialAttendance);
 
         } catch (err: any) {
-            setError(err.message || "Błąd ładowania danych");
+            console.error(err);
+            setError(err.message || "Failed to load data");
         } finally {
             setLoading(false);
         }
     };
     loadData();
-  }, [groupId]);
+  }, [groupId, today]);
 
   const updateAttendance = (preschoolerId: number, field: keyof AttendanceRecord, value: any) => {
     setAttendance(prev => {
@@ -68,99 +104,102 @@ export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Pro
 
   const setStatus = (preschoolerId: number, status: AttendanceRecord["status"]) => {
     updateAttendance(preschoolerId, "status", status);
+    // Automatyczne ustawianie czasu przyjścia przy zmianie na Obecny/Spóźniony (tylko jeśli puste)
     if (status === "PRESENT" || status === "LATE") {
       const record = attendance.get(preschoolerId);
       if (!record?.arrivalTime) {
-        updateAttendance(preschoolerId, "arrivalTime", new Date().toTimeString().split(' ')[0]);
+        updateAttendance(preschoolerId, "arrivalTime", new Date().toTimeString().split(' ')[0].substring(0, 5));
       }
     }
   };
-const formatTime = (time: string | undefined | null): string | null => {
+
+  // Helper do formatowania czasu dla backendu (dodaje sekundy jeśli trzeba)
+  const formatTimeForBackend = (time: string | undefined | null): string | null => {
     if (!time) return null;
-    // Jeśli format to HH:mm (np. 14:30), dodaj sekundy (:00)
     if (time.length === 5) {
       return `${time}:00`;
     }
-    return time; // Jeśli już jest HH:mm:ss, zostaw bez zmian
+    return time;
   };
 
   const handleSaveAll = async () => {
     setSaving(true);
     setSuccess(false);
+    setError(null);
     
     try {
         const accountInfo = api.getAccountInfo();
-        console.log("🔍 [DEBUG] User Info:", accountInfo);
+        const isTeacher = accountInfo?.accountType === "TEACHER";
 
-        // Jawne budowanie obiektu DTO
-        const attendanceData = Array.from(attendance.values()).map(record => {
-            const formattedArrival = formatTime(record.arrivalTime);
-            const formattedDeparture = formatTime(record.departureTime);
+        // Konwersja Mapy na tablicę do wysłania
+        const attendanceData = Array.from(attendance.values());
 
+        // Wysyłamy żądania równolegle
+        await Promise.all(attendanceData.map(async (record) => {
+            
             const payload = {
+                id: record.id, // Może być undefined (nowy) lub number (edycja)
                 date: today, 
                 status: record.status, 
-                arrivalTime: formattedArrival,  
-                departureTime: formattedDeparture, 
+                arrivalTime: formatTimeForBackend(record.arrivalTime),  
+                departureTime: formatTimeForBackend(record.departureTime), 
                 preschoolerId: Number(record.preschoolerId),
                 recordedById: Number(accountInfo?.id)
             };
-
-            return payload;
-        });
-
-        console.log("📦 [DEBUG] Full Payload generated (Sample 0):", attendanceData[0]);
-
-        // Wysyłanie
-        await Promise.all(attendanceData.map(async (data, index) => {
-            console.log(`🚀 [DEBUG] Sending POST #${index} payload:`, JSON.stringify(data));
             
             try {
-                const response = await api.post("/attendance", data);
-                console.log(`✅ [DEBUG] Success POST #${index}`);
-                return response;
+                if (record.id) {
+                     // --- PUT: Aktualizacja istniejącego rekordu --- 
+                     // Endpoint: /api/attendance/{id}
+                     await api.put(`/attendance/${record.id}`, payload);
+                } else {
+                     // --- POST: Tworzenie nowego rekordu --- 
+                     // Endpoint: /api/attendance
+                     await api.post("/attendance", payload);
+                }
             } catch (reqError: any) {
-                console.error(`❌ [DEBUG] Failed POST #${index}. Data:`, data);
-                console.error(`❌ [DEBUG] Error details:`, reqError.response?.data || reqError.message);
+                console.error(`Failed request for child ${record.preschoolerId}`, reqError);
                 throw reqError;
             }
         }));
 
-        console.log("🏁 [DEBUG] All requests completed successfully.");
         setSuccess(true);
-        setTimeout(() => onBack(), 2000);
+        // Automatyczny powrót po 1.5 sekundy
+        setTimeout(() => onBack(), 1500);
 
     } catch (err: any) {
-        console.error("🔥 [DEBUG] Major Error in handleSaveAll:", err);
-        setError("Nie udało się zapisać obecności. Sprawdź konsolę.");
+        console.error("Error saving attendance:", err);
+        setError("Failed to save some records. Please check connection.");
     } finally {
         setSaving(false);
     }
   };
 
-  if (loading) return <div className={styles.loading}><RefreshCw className={styles.spinner} /> Ładowanie listy...</div>;
+  if (loading) return <div className={styles.loading}><RefreshCw className={styles.spinner} /> Loading list...</div>;
 
   return (
     <div className={styles.container}>
       {/* HEADER */}
       <div className={styles.header}>
         <div style={{ display: 'flex', gap: '10px' }}>
+            { !api.getAccountInfo()?.accountType?.includes("TEACHER") && (
             <button onClick={onBack} className={styles.backButton}>
-                <ArrowLeft size={16} /> Wróć do Grup
+                <ArrowLeft size={16} /> Back to Groups
             </button>
-            
+            )}
+
             <button 
                 onClick={onHistoryClick} 
                 className={styles.historyButton} 
                 style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '0.5rem 1rem', border: '1px solid #ccc', borderRadius: '0.375rem', background: '#fff', cursor: 'pointer' }}
             >
-                <Calendar size={16} /> Historia obecności grupy
+                <Calendar size={16} /> Group History
             </button>
         </div>
 
         <div className={styles.headerInfo}>
           <h1 className={styles.title}>
-            Obecność - {group?.groupName || `Grupa ${groupId}`}
+            Attendance - {group?.groupName || `Group ${groupId}`}
           </h1>
           <p className={styles.date}>
             <Clock size={16} /> {today}
@@ -169,13 +208,14 @@ const formatTime = (time: string | undefined | null): string | null => {
       </div>
 
       {error && <div className={styles.errorBanner}>{error}</div>}
-      {success && <div className={styles.successBanner}>Zapisano pomyślnie!</div>}
+      {success && <div className={styles.successBanner}>Saved successfully!</div>}
 
-      {/* KARTY DZIECI */}
+      {/* GRID KART UCZNIÓW */}
       <div className={styles.studentsGrid}>
         {preschoolers.map((child) => {
            const record = attendance.get(child.id);
            if (!record) return null;
+           
            return (
             <div key={child.id} className={styles.studentCard}>
                 <div className={styles.studentInfo}>
@@ -198,12 +238,22 @@ const formatTime = (time: string | undefined | null): string | null => {
                 {(record.status === "PRESENT" || record.status === "LATE") && (
                     <div className={styles.timeInputs}>
                         <div className={styles.timeInput}>
-                            <label>Wejście:</label>
-                            <input type="time" value={record.arrivalTime || ""} onChange={(e) => updateAttendance(child.id, "arrivalTime", e.target.value)} disabled={saving} />
+                            <label>Arrival:</label>
+                            <input 
+                                type="time" 
+                                value={record.arrivalTime || ""} 
+                                onChange={(e) => updateAttendance(child.id, "arrivalTime", e.target.value)} 
+                                disabled={saving} 
+                            />
                         </div>
                         <div className={styles.timeInput}>
-                            <label>Wyjście:</label>
-                            <input type="time" value={record.departureTime || ""} onChange={(e) => updateAttendance(child.id, "departureTime", e.target.value)} disabled={saving} />
+                            <label>Departure:</label>
+                            <input 
+                                type="time" 
+                                value={record.departureTime || ""} 
+                                onChange={(e) => updateAttendance(child.id, "departureTime", e.target.value)} 
+                                disabled={saving} 
+                            />
                         </div>
                     </div>
                 )}
@@ -214,7 +264,7 @@ const formatTime = (time: string | undefined | null): string | null => {
 
       <div className={styles.footer}>
         <button onClick={handleSaveAll} disabled={saving} className={styles.saveButton}>
-            <Save size={16} /> Zapisz obecność
+            <Save size={16} /> {saving ? "Saving..." : "Save Attendance"}
         </button>
       </div>
     </div>

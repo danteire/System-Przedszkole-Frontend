@@ -304,7 +304,7 @@ export default function AddPreschoolerForm({ onSuccess }: AddPreschoolerFormProp
           <option value="">Select a group</option>
           {groups.map((group) => (
             <option key={group.id} value={group.id}>
-              {group.mainCaretakerId}
+              {group.groupName}
             </option>
           ))}
         </select>
@@ -326,7 +326,7 @@ export default function AddPreschoolerForm({ onSuccess }: AddPreschoolerFormProp
             <option value="">Select a Parent</option>
             {parents.map((parent) => (
               <option key={parent.id} value={parent.id}>
-                {parent.email}
+                {" (" + parent.firstName + " " + parent.lastName + ")"}
               </option>
             ))}
           </select>
