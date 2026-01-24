@@ -1,14 +1,12 @@
-// app/routes/adminPanel/forms/AddPreschoolerForm.tsx
 import { useEffect, useState } from "react";
 import { api } from "~/utils/serviceAPI";
 import styles from "./Form.module.css";
-import groups from "~/groups/groups";
 
-interface AddGroupFormData {
+interface AddGroupFormProps {
   onSuccess: () => void;
 }
 
-interface GroupFormData{
+interface GroupFormData {
   groupName: string;
   mainCaretakerId?: number;
 }
@@ -21,25 +19,26 @@ interface Teacher {
   accountType: string;
 }
 
-interface Group{
+interface Group {
   id: number;
   groupName: string;
   mainCaretakerId: number;
 }
-export default function AddGroupForm({ onSuccess }: AddGroupFormData) {
+
+export default function AddGroupForm({ onSuccess }: AddGroupFormProps) {
   const [formData, setFormData] = useState<GroupFormData>({
     groupName: '',
     mainCaretakerId: undefined,
   });
 
-  const [teachers, setTeachers] = useState<Teacher[]>([])
-  const [groups, setGroups] = useState<Group[]>([])
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [groups, setGroups] = useState<Group[]>([]);
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  useEffect(()=>{
+  useEffect(() => {
     loadTeachers();
     loadGroups();
   }, []);
@@ -48,83 +47,60 @@ export default function AddGroupForm({ onSuccess }: AddGroupFormData) {
     setIsLoading(true);
     setError(null);
     try {
-          if (!api.isAuthenticated()) {
-            throw new Error("You are not authenticated. Please log in again.");
-          }
-    
-          console.log("📤 Fetching teachers...");
-    
-          const response = await api.get<Teacher[] | { data: Teacher[] }>("/accounts/teachers");
-    
-          console.log("✅ Parents fetched:", response);
-    
-          let accountsData: Teacher[];
-          if (Array.isArray(response)) {
-            accountsData = response;
-          } else if (response && 'data' in response && Array.isArray(response.data)) {
-            accountsData = response.data;
-          } else {
-            console.error("Unexpected response format:", response);
-            accountsData = [];
-          }
-    
-          setTeachers(accountsData);
-        } catch (err: any) {
-          console.error("❌ Failed to load teachers:", err);
-    
-          // 401 = Unauthorized - brak dostępu
-          if (err.status === 401) {
-            setError("Access denied. You don't have permission to view teachers.");
-          } 
-          // Inne błędy
-          else {
-            setError(err.message || "Failed to load teachers");
-          }
-        } finally {
-          setIsLoading(false);
-        }
+      if (!api.isAuthenticated()) {
+        throw new Error("You are not authenticated.");
+      }
+      const response = await api.get<Teacher[] | { data: Teacher[] }>("/accounts/teachers");
+      let accountsData: Teacher[];
+      if (Array.isArray(response)) {
+        accountsData = response;
+      } else if (response && 'data' in response && Array.isArray(response.data)) {
+        accountsData = response.data;
+      } else {
+        accountsData = [];
+      }
+      setTeachers(accountsData);
+    } catch (err: any) {
+      console.error("❌ Failed to load teachers:", err);
+      // Ignorujemy błędy pobierania w UI, ewentualnie logujemy
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   const loadGroups = async () => {
     setIsLoading(true);
     setError(null);
     try {
-          if (!api.isAuthenticated()) {
-            throw new Error("You are not authenticated. Please log in again.");
-          }
-    
-          console.log("📤 Fetching Parents...");
-    
-          const response = await api.get<Group[] | { data: Group[] }>("/groups");
-    
-          console.log("✅ Groups fetched:", response);
-    
-          let accountsData: Group[];
-          if (Array.isArray(response)) {
-            accountsData = response;
-          } else if (response && 'data' in response && Array.isArray(response.data)) {
-            accountsData = response.data;
-          } else {
-            console.error("Unexpected response format:", response);
-            accountsData = [];
-          }
-    
-          setGroups(accountsData);
-        } catch (err: any) {
-          console.error("❌ Failed to load groups:", err);
-    
-          // 401 = Unauthorized - brak dostępu
-          if (err.status === 401) {
-            setError("Access denied. You don't have permission to view groups.");
-          } 
-          // Inne błędy
-          else {
-            setError(err.message || "Failed to load groups");
-          }
-        } finally {
-          setIsLoading(false);
-        }
+      if (!api.isAuthenticated()) {
+        throw new Error("You are not authenticated.");
+      }
+      const response = await api.get<Group[] | { data: Group[] }>("/groups");
+      let accountsData: Group[];
+      if (Array.isArray(response)) {
+        accountsData = response;
+      } else if (response && 'data' in response && Array.isArray(response.data)) {
+        accountsData = response.data;
+      } else {
+        accountsData = [];
+      }
+      setGroups(accountsData);
+    } catch (err: any) {
+      console.error("❌ Failed to load groups:", err);
+    } finally {
+      setIsLoading(false);
+    }
   }
+
+  // --- LOGIKA FILTROWANIA NAUCZYCIELI ---
+  // Zwraca tylko nauczycieli, którzy nie są mainCaretakerId w żadnej istniejącej grupie
+  const getAvailableTeachers = () => {
+      // 1. Zbierz ID zajętych nauczycieli
+      const assignedTeacherIds = new Set(groups.map(g => g.mainCaretakerId));
+
+      // 2. Zwróć tylko tych, których ID nie ma w zbiorze
+      return teachers.filter(t => !assignedTeacherIds.has(t.id));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,15 +115,15 @@ export default function AddGroupForm({ onSuccess }: AddGroupFormData) {
       return;
     }
 
-
     try {
-      // Sprawdź uprawnienia
+      // Sprawdź uprawnienia (Admin LUB Teacher)
       if (!api.isAuthenticated()) {
         throw new Error("You are not authenticated. Please log in again.");
       }
 
-      if (!api.isAdmin()) {
-        throw new Error("You don't have admin permissions.");
+      // ZMIANA: Pozwalamy też Nauczycielowi
+      if (!api.isAdmin() && !api.isTeacher()) {
+        throw new Error("You don't have permissions to create groups.");
       }
 
       const response = await api.post("/groups", {
@@ -174,14 +150,11 @@ export default function AddGroupForm({ onSuccess }: AddGroupFormData) {
       console.error("❌ Failed to create Group:", err);
 
       if (err.status === 401 || err.status === 403) {
-        setError("Session expired or insufficient permissions. Please log in again.");
-        setTimeout(() => {
-          window.location.href = "/";
-        }, 2000);
+        setError("Session expired or insufficient permissions.");
       } else if (err.status === 400) {
         setError(err.data?.message || "Invalid data. Please check your input.");
       } else if (err.status === 409) {
-        setError("Group with this Teacher already exists.");
+        setError("Group with this name or Teacher already exists.");
       } else {
         setError(err.message || "Failed to add Group. Please try again.");
       }
@@ -205,6 +178,8 @@ export default function AddGroupForm({ onSuccess }: AddGroupFormData) {
     });
     if (error) setError(null);
   };
+
+  const availableTeachers = getAvailableTeachers();
 
   return (
     <form onSubmit={handleSubmit} className={styles.form}>
@@ -246,21 +221,26 @@ export default function AddGroupForm({ onSuccess }: AddGroupFormData) {
         <select
           id="mainCaretakerId"
           name="mainCaretakerId"
-          value={formData.mainCaretakerId}
+          value={formData.mainCaretakerId ?? ""}
           onChange={handleSelectChange}
           required
           disabled={isLoading}
           className={styles.input}
         >
           <option value="">Select a main caretaker</option>
-          {teachers.map((teacher) => (
+          {/* ZMIANA: Mapujemy tylko dostępnych nauczycieli */}
+          {availableTeachers.map((teacher) => (
             <option key={teacher.id} value={teacher.id}>
-              {teacher.email}
+              {teacher.firstName} {teacher.lastName} ({teacher.email})
             </option>
           ))}
         </select>
+        {availableTeachers.length === 0 && !isLoading && (
+            <small style={{color: '#e53e3e', marginTop: '5px', display: 'block'}}>
+                All teachers are currently assigned to groups.
+            </small>
+        )}
       </div>
-
 
       <button
         type="submit"

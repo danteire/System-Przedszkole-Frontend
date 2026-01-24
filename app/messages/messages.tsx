@@ -1,42 +1,47 @@
-import React, { useState, useEffect, useRef } from "react";
+// app/routes/messages/MessagesPage.tsx
+import React, { useState, useEffect } from "react";
 import DashBoard from "~/commons/dashboard";
 import { api } from "~/utils/serviceAPI"; 
 import { type MessageDTO, type Account, type MessageAttachmentDTO } from "./messageTypes";
 import styles from "./MessagesPage.module.css";
-import { RefreshCw, Send, Paperclip, X, Download } from "lucide-react";
+import { RefreshCw, Send } from "lucide-react";
+
+import { MessageList } from "./components/MessageList";
+import { MessageDetail } from "./components/MessageDetail";
+import { ComposeMessageModal } from "./components/ComposeMessageModal";
 
 export default function MessagesPage() {
-  // --- Pobranie danych zalogowanego użytkownika ---
   const accountInfo = api.getAccountInfo();
   const currentUserId = accountInfo?.id;
+  const currentUserRole = accountInfo?.accountType;
   const currentUserName = accountInfo ? `${accountInfo.firstName} ${accountInfo.lastName}` : "";
 
-  // --- Stan Aplikacji ---
   const [activeTab, setActiveTab] = useState<"inbox" | "sent">("inbox");
   const [messages, setMessages] = useState<MessageDTO[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState<MessageDTO | null>(null);
   
-  // --- Stan Formularza Nowej Wiadomości ---
-  const [isComposeOpen, setIsComposeOpen] = useState(false);
-  const [sending, setSending] = useState(false);
   const [availableRecipients, setAvailableRecipients] = useState<Account[]>([]);
   
-  // Pola formularza
-  const [newMsgRecipient, setNewMsgRecipient] = useState<string>("");
-  const [newMsgSubject, setNewMsgSubject] = useState("");
-  const [newMsgContent, setNewMsgContent] = useState("");
-  const [files, setFiles] = useState<File[]>([]); 
+  // NOWE: Mapa użytkowników (ID -> "Imię Nazwisko")
+  const [userMap, setUserMap] = useState<Record<number, string>>({});
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const [replyData, setReplyData] = useState<{
+      recipientId: string; 
+      recipientName: string; 
+      subject: string; 
+      content: string
+  } | null>(null);
 
-  // --- 1. Pobieranie wiadomości (API) ---
-  const fetchMessages = async () => {
+  const fetchMessages = async (isBackground = false) => {
     if (!currentUserId) return;
-
-    setLoading(true);
-    setSelectedMessage(null);
-    setMessages([]);
+    
+    if (!isBackground) {
+        setLoading(true);
+        setSelectedMessage(null);
+        setMessages([]);
+    }
     
     try {
       let endpoint = "";
@@ -47,76 +52,84 @@ export default function MessagesPage() {
       }
 
       const data = await api.get<MessageDTO[]>(endpoint); 
-      
       if (Array.isArray(data)) {
          const sorted = data.sort((a, b) => new Date(b.sentAt).getTime() - new Date(a.sentAt).getTime());
          setMessages(sorted);
       }
     } catch (error) {
-      console.error("Failed to fetch messages:", error);
+      if (!isBackground) console.error("Failed to fetch messages:", error);
     } finally {
-      setLoading(false);
+      if (!isBackground) setLoading(false);
     }
   };
 
-  // --- 2. Pobieranie listy użytkowników ---
+  // ZMODYFIKOWANA FUNKCJA POBIERANIA UŻYTKOWNIKÓW
   const fetchRecipients = async () => {
       try {
+          // Pobieramy WSZYSTKICH użytkowników
           const users = await api.get<Account[]>("/accounts"); 
+          
           if (Array.isArray(users)) {
-              setAvailableRecipients(users);
+              // 1. Tworzymy mapę dla wyświetlania nazw (niezależnie od ról)
+              const map: Record<number, string> = {};
+              users.forEach(u => {
+                  map[u.id] = `${u.firstName} ${u.lastName}`;
+              });
+              setUserMap(map);
+
+              // 2. Filtrujemy listę do Selecta (tylko ci, do których można pisać)
+              let filteredUsers = users;
+              if (currentUserRole === 'PARENT') {
+                  filteredUsers = users.filter(u => u.accountType === 'TEACHER');
+              } else {
+                  filteredUsers = users.filter(u => u.id !== currentUserId);
+              }
+              setAvailableRecipients(filteredUsers);
           }
       } catch (error) {
           console.error("Failed to fetch accounts list", error);
       }
   };
 
+  useEffect(() => { fetchMessages(false); }, [activeTab, currentUserId]);
+  
   useEffect(() => {
-    fetchMessages();
-  }, [activeTab, currentUserId]);
+      const intervalId = setInterval(() => {
+          fetchMessages(true);
+      }, 5000);
+      return () => clearInterval(intervalId);
+  }, [activeTab, currentUserId]); 
 
-  useEffect(() => {
-      fetchRecipients();
-  }, []);
+  useEffect(() => { fetchRecipients(); }, [currentUserRole]);
 
-  // --- NOWE: Funkcja pobierająca załączniki po kliknięciu ---
-  const handleMessageClick = async (msg: MessageDTO) => {
+  // --- Handlers ---
+
+  const handleMessageSelect = async (msg: MessageDTO) => {
     setSelectedMessage({ ...msg, attachments: [] });
-
     try {
         const attachmentsData = await api.get<MessageAttachmentDTO[]>(`/message-attachments/message/${msg.id}`);
-
         if (Array.isArray(attachmentsData) && attachmentsData.length > 0) {
-            console.log("Znaleziono załączniki:", attachmentsData);
-            
             setSelectedMessage(prev => {
                 if (prev && prev.id === msg.id) {
                     return { ...prev, attachments: attachmentsData };
                 }
                 return prev;
             });
-        } else {
-            console.log("Brak załączników dla tej wiadomości.");
-        }
+        } 
     } catch (error) {
-        // Jeśli 404 lub inny błąd -> po prostu nie pokazujemy załączników, nie blokujemy UI
-        console.log("Nie udało się pobrać informacji o załącznikach (może ich nie być).");
+        console.log("No attachments info or error.");
     }
   };
 
-
-  // --- 3. Wysyłanie wiadomości ---
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMsgRecipient || !currentUserId) return;
+  const handleSendMessage = async (recipientId: string, subject: string, content: string, files: File[]) => {
+    if (!currentUserId) return;
     
-    setSending(true);
     try {
         const payload = {
             senderId: currentUserId,
-            recipientId: parseInt(newMsgRecipient),
-            subject: newMsgSubject,
-            content: newMsgContent,
+            recipientId: parseInt(recipientId),
+            subject: subject,
+            content: content,
         };
 
         const createdMessage = await api.post<MessageDTO>("/messages", payload);
@@ -125,28 +138,22 @@ export default function MessagesPage() {
             await Promise.all(files.map(async (file) => {
                 const formData = new FormData();
                 formData.append("file", file);
-                await api.upload<MessageAttachmentDTO>(`/message-attachments/upload/${createdMessage.id}`, formData);
+                await api.upload(`/message-attachments/upload/${createdMessage.id}`, formData);
             }));
         }
         
-        setIsComposeOpen(false);
-        resetForm();
-        
         if (activeTab === "sent") {
-            fetchMessages();
+            fetchMessages(false);
         } else {
             setActiveTab("sent");
         }
-        
     } catch (error) {
-        console.error("Failed to send message:", error);
-        alert("Nie udało się wysłać wiadomości.");
-    } finally {
-        setSending(false);
+        console.error("Failed to send:", error);
+        alert("Failed to send message.");
+        throw error;
     }
   };
 
-  // --- 4. Pobieranie pliku ---
   const handleDownload = async (attachment: MessageAttachmentDTO) => {
       try {
         const blob = await api.download('/message-attachments/download/' + attachment.id);
@@ -161,37 +168,28 @@ export default function MessagesPage() {
             window.URL.revokeObjectURL(url);
         }, 100);
       } catch (e) {
-        console.error("Błąd pobierania", e);
-        alert("Nie udało się pobrać pliku.");
+        alert("Failed to download file.");
       }
   };
 
-  // --- Helpersy formularza ---
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-      if (e.target.files && e.target.files.length > 0) {
-          const newFiles = Array.from(e.target.files);
-          setFiles((prev) => [...prev, ...newFiles]);
-      }
-      if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const removeFile = (indexToRemove: number) => {
-      setFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
-  };
-
-  const handleReply = (msg: MessageDTO) => {
-    setIsComposeOpen(true);
+  const handleReplyClick = (msg: MessageDTO) => {
     const replyToId = activeTab === 'inbox' ? msg.senderId : msg.recipientId;
-    setNewMsgRecipient(replyToId.toString());
-    setNewMsgSubject(msg.subject.startsWith("Re:") ? msg.subject : `Re: ${msg.subject}`);
-    setNewMsgContent(`\n\n--- W odpowiedzi na ---\n${msg.content}`);
+    
+    // Używamy mapy, żeby pobrać ładną nazwę, lub fallback do ID/pola z DTO
+    const replyToName = userMap[replyToId] || (activeTab === 'inbox' ? msg.senderName : msg.recipientName) || "User";
+
+    setReplyData({
+        recipientId: replyToId.toString(),
+        recipientName: replyToName,
+        subject: msg.subject.startsWith("Re:") ? msg.subject : `Re: ${msg.subject}`,
+        content: `\n\n--- In reply to ---\n${msg.content}`
+    });
+    setIsComposeOpen(true);
   };
 
-  const resetForm = () => {
-    setNewMsgRecipient("");
-    setNewMsgSubject("");
-    setNewMsgContent("");
-    setFiles([]); 
+  const handleOpenCompose = () => {
+      setReplyData(null);
+      setIsComposeOpen(true);
   };
 
   return (
@@ -200,266 +198,65 @@ export default function MessagesPage() {
       <div className={styles.messagesWrapper}>
         <div className={styles.mainSection}>
           
-          {/* HEADER */}
           <div className={styles.header}>
             <div className={styles.title}>
-              Centrum Wiadomości
+              Message Center
               {loading && <RefreshCw className="animate-spin" size={20} style={{marginLeft: 10, color: '#aaa'}}/>}
-              <span className={styles.subtitle} style={{ fontSize: '0.9rem', marginLeft: '10px', color: '#718096', fontWeight: 'normal' }}>
-                 Witaj, {currentUserName}
+              <span className={styles.subtitle}>
+                 Welcome, {currentUserName}
               </span>
             </div>
-            <button
-              onClick={() => { resetForm(); setIsComposeOpen(true); }}
-              className={styles.composeButton}
-            >
-              <Send size={18} /> Napisz wiadomość
+            <button onClick={handleOpenCompose} className={styles.composeButton}>
+              <Send size={18} /> Compose
             </button>
           </div>
 
-          {/* TABS */}
           <div className={styles.controlsRow}>
             <div className={styles.tabsContainer}>
                 <button
-                onClick={() => { setActiveTab("inbox"); }}
-                className={`${styles.tabButton} ${activeTab === "inbox" ? styles.active : ""}`}
+                    onClick={() => { setActiveTab("inbox"); }}
+                    className={`${styles.tabButton} ${activeTab === "inbox" ? styles.active : ""}`}
                 >
-                Odebrane
+                Inbox
                 </button>
                 <button
-                onClick={() => { setActiveTab("sent"); }}
-                className={`${styles.tabButton} ${activeTab === "sent" ? styles.active : ""}`}
+                    onClick={() => { setActiveTab("sent"); }}
+                    className={`${styles.tabButton} ${activeTab === "sent" ? styles.active : ""}`}
                 >
-                Wysłane
+                Sent
                 </button>
             </div>
           </div>
 
-          {/* CONTENT */}
           <div className={styles.contentGrid}>
-            
-            {/* LISTA */}
-            <div className={`${styles.messagesList} ${selectedMessage ? styles.hiddenMobile : ''}`}>
-              {messages.length === 0 ? (
-                 <div className={styles.emptyState}>
-                    {loading ? "Ładowanie..." : "Brak wiadomości"}
-                 </div>
-              ) : (
-                messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    // ZMIANA: Tutaj używamy nowej funkcji handleMessageClick
-                    onClick={() => handleMessageClick(msg)}
-                    className={`${styles.messageCard} ${selectedMessage?.id === msg.id ? styles.active : ""}`}
-                  >
-                    <div className={styles.msgHeader}>
-                      <span className={styles.sender}>
-                        {activeTab === "inbox" ? (msg.senderName || `ID: ${msg.senderId}`) : `Do: ${msg.recipientName || msg.recipientId}`}
-                      </span>
-                      <span className={styles.date}>
-                        {new Date(msg.sentAt).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <span className={styles.subject}>
-                        {msg.subject}
-                        {/* Opcjonalnie: ikona spinacza jeśli wiadomość ma flagę 'hasAttachments' z backendu
-                            Jeśli backend tego nie zwraca na liście, ikonka pojawi się dopiero po kliknięciu */}
-                    </span>
-                    <div className={styles.preview}>{msg.content}</div>
-                  </div>
-                ))
-              )}
-            </div>
+            <MessageList 
+                messages={messages}
+                activeTab={activeTab}
+                selectedMessageId={selectedMessage?.id || null}
+                loading={loading}
+                onSelectMessage={handleMessageSelect}
+                userMap={userMap} // Przekazujemy mapę
+            />
 
-            {/* SZCZEGÓŁY */}
-            {selectedMessage ? (
-              <div className={styles.messageDetail}>
-                <div className={styles.detailHeader}>
-                  <h2 className={styles.detailSubject}>{selectedMessage.subject}</h2>
-                  <div className={styles.detailMeta}>
-                    <div>
-                      <p><strong>Od:</strong> {selectedMessage.senderName || selectedMessage.senderId}</p>
-                      <p><strong>Do:</strong> {activeTab === "inbox" ? "Mnie" : (selectedMessage.recipientName || selectedMessage.recipientId)}</p>
-                    </div>
-                    <div style={{ display: 'flex', gap: '10px', alignItems: 'center'}}>
-                        <span className={styles.date}>
-                            {new Date(selectedMessage.sentAt).toLocaleString()}
-                        </span>
-                        <button onClick={() => handleReply(selectedMessage)} className={styles.replyButton}>
-                            Odpowiedz
-                        </button>
-                        <button 
-                            className="md:hidden"
-                            style={{ 
-                                marginLeft: '10px', border: '1px solid #e53e3e', color: '#e53e3e', 
-                                background: 'white', padding: '0.4rem 1rem', borderRadius: '6px'
-                            }}
-                            onClick={(e) => { e.stopPropagation(); setSelectedMessage(null); }}
-                        >
-                            X
-                        </button>
-                    </div>
-                  </div>
-                </div>
-                <div className={styles.detailContent}>
-                  {selectedMessage.content}
-                </div>
-                
-                {/* SEKCJA ZAŁĄCZNIKÓW */}
-                {/* Wyświetli się tylko jeśli api.get(...) zwróciło listę */}
-                {selectedMessage.attachments && selectedMessage.attachments.length > 0 && (
-                    <div style={{ marginTop: '2rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
-                        <strong style={{display: 'flex', alignItems: 'center', gap: '5px', marginBottom: '10px'}}>
-                            <Paperclip size={16}/> Załączniki ({selectedMessage.attachments.length}):
-                        </strong>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px'}}>
-                           {selectedMessage.attachments.map(att => (
-                               <div 
-                                   key={att.id} 
-                                   onClick={() => handleDownload(att)}
-                                   style={{
-                                       display: 'flex', alignItems: 'center', gap: '8px',
-                                       background: '#ebf8ff', border: '1px solid #bee3f8',
-                                       padding: '8px 12px', borderRadius: '6px',
-                                       cursor: 'pointer', transition: 'background 0.2s',
-                                       color: '#2b6cb0', fontSize: '0.9rem'
-                                   }}
-                                   title={`Pobierz: ${att.fileName}`}
-                               >
-                                   <Download size={14} />
-                                   <span style={{maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>
-                                       {att.fileName}
-                                   </span>
-                               </div>
-                           ))}
-                        </div>
-                    </div>
-                )}
-              </div>
-            ) : (
-              <div className={`${styles.messageDetail} ${styles.emptyState}`} style={{background: 'white', border: 'none'}}>
-                {messages.length > 0 ? "Wybierz wiadomość z listy, aby przeczytać treść" : ""}
-              </div>
-            )}
+            <MessageDetail 
+                message={selectedMessage}
+                activeTab={activeTab}
+                onReply={handleReplyClick}
+                onDownload={handleDownload}
+                onClose={() => setSelectedMessage(null)}
+                userMap={userMap} // Przekazujemy mapę
+            />
           </div>
         </div>
       </div>
 
-      {/* MODAL (bez zmian) */}
-      {isComposeOpen && (
-        <div className={styles.modalOverlay}>
-          <div className={styles.modalCard}>
-            <h2 className={styles.detailSubject} style={{marginBottom: '20px'}}>Nowa wiadomość</h2>
-            <form onSubmit={handleSendMessage}>
-               {/* ... (Reszta formularza bez zmian) ... */}
-               <div className={styles.formGroup}>
-                <label className={styles.label}>Odbiorca</label>
-                <select
-                  required
-                  value={newMsgRecipient}
-                  onChange={(e) => setNewMsgRecipient(e.target.value)}
-                  className={styles.select}
-                >
-                  <option value="">-- Wybierz odbiorcę --</option>
-                  {availableRecipients.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.firstName} {user.lastName} ({user.accountType})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Temat</label>
-                <input
-                  type="text"
-                  required
-                  value={newMsgSubject}
-                  onChange={(e) => setNewMsgSubject(e.target.value)}
-                  className={styles.input}
-                  placeholder="Temat wiadomości"
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Treść</label>
-                <textarea
-                  required
-                  rows={5}
-                  value={newMsgContent}
-                  onChange={(e) => setNewMsgContent(e.target.value)}
-                  className={styles.textarea}
-                  placeholder="Wpisz treść..."
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                  <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px'}}>
-                    <label className={styles.label} style={{marginBottom: 0}}>Załączniki</label>
-                    <button 
-                        type="button" 
-                        onClick={() => fileInputRef.current?.click()}
-                        style={{
-                            display: 'flex', alignItems: 'center', gap: '5px',
-                            background: 'transparent', border: '1px solid #cbd5e0',
-                            padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.85rem'
-                        }}
-                    >
-                        <Paperclip size={14} /> Dodaj plik
-                    </button>
-                  </div>
-                  
-                  <input 
-                      type="file" 
-                      multiple 
-                      ref={fileInputRef} 
-                      style={{display: 'none'}} 
-                      onChange={handleFileSelect}
-                  />
-
-                  {files.length > 0 && (
-                      <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px'}}>
-                          {files.map((file, idx) => (
-                              <div key={idx} style={{
-                                  display: 'flex', alignItems: 'center', gap: '5px',
-                                  background: '#f7fafc', border: '1px solid #e2e8f0',
-                                  padding: '4px 8px', borderRadius: '4px', fontSize: '0.85rem'
-                              }}>
-                                  <span style={{maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
-                                      {file.name}
-                                  </span>
-                                  <X 
-                                      size={14} 
-                                      style={{cursor: 'pointer', color: '#e53e3e'}} 
-                                      onClick={() => removeFile(idx)}
-                                  />
-                              </div>
-                          ))}
-                      </div>
-                  )}
-              </div>
-
-              <div className={styles.modalActions}>
-                <button
-                  type="button"
-                  onClick={() => setIsComposeOpen(false)}
-                  className={styles.cancelButton}
-                  disabled={sending}
-                >
-                  Anuluj
-                </button>
-                <button
-                  type="submit"
-                  className={styles.submitButton}
-                  disabled={sending}
-                >
-                  {sending ? "Wysyłanie..." : "Wyślij wiadomość"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <ComposeMessageModal 
+          isOpen={isComposeOpen}
+          onClose={() => setIsComposeOpen(false)}
+          onSend={handleSendMessage}
+          recipients={availableRecipients}
+          replyTo={replyData}
+      />
     </>
   );
 }
