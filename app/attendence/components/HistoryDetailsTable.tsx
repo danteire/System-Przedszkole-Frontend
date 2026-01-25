@@ -2,8 +2,8 @@
 import { useState, useEffect } from "react";
 import { api } from "~/utils/serviceAPI";
 import { ArrowLeft, RefreshCw } from "lucide-react";
-import styles from "./AttendanceView.module.css";
-import type { AttendanceRecord, Preschooler } from "./attendanceTypes";
+import styles from "../AttendanceView.module.css";
+import type { AttendanceRecord, Preschooler } from "../attendanceTypes";
 
 interface Props {
   groupId: number;

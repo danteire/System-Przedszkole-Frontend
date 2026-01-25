@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { api } from "~/utils/serviceAPI";
 import { Users, ChevronRight, RefreshCw } from "lucide-react";
-import styles from "./GroupsList.module.css";
+import styles from "../GroupsList.module.css";
 
 interface Group {
   id: number;
