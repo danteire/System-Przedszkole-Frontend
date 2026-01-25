@@ -1,404 +1,162 @@
 /* app/routes/meals/MealsPage.module.css */
-
 .wrapper {
   max-width: 1600px;
-  margin: 2rem auto;
-  padding: 0 1.5rem;
+  margin: 0 auto;
+  padding: var(--spacing-lg);
 }
 
 .header {
-  margin-bottom: 2rem;
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 1rem;
+  margin-bottom: var(--spacing-xl);
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  align-items: center;
+  background: var(--bg-card);
+  /* Orange? No, header is transparent usually */
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  /* Orange Bar Header like in screenshot */
+  color: white;
+  box-shadow: var(--shadow-orange);
 }
 
 .title {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #2d3748;
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-black);
+  margin: 0;
+  color: white;
+}
+
+.subtitle {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
   margin: 0;
 }
 
-.subtitle {
-  color: #718096;
-  font-size: 1rem;
-  margin-top: 0.5rem;
-  margin-bottom: 0;
-}
-
-/* Nowy przycisk dodawania posiłku */
 .createButton {
-  background: #48bb78; /* Zielony */
-  color: white;
+  background: white;
+  color: var(--color-primary);
   border: none;
-  padding: 0.6rem 1.2rem;
-  border-radius: 8px;
-  font-weight: 600;
+  padding: 0.75rem 2rem;
+  border-radius: var(--radius-full);
+  font-weight: var(--font-weight-bold);
   cursor: pointer;
-  box-shadow: 0 2px 4px rgba(72, 187, 120, 0.3);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: background 0.2s;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s;
 }
 
 .createButton:hover {
-  background: #38a169;
-}
-
-/* Układ tygodnia */
-.weekGrid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr); /* 5 dni obok siebie */
-  gap: 1.5rem;
-  align-items: start;
-}
-
-/* Kolumna Dnia */
-.dayColumn {
-  background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.dayHeader {
-  background: #f7fafc;
-  padding: 1rem;
-  text-align: center;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.dayName {
-  display: block;
-  font-weight: 700;
-  font-size: 1.1rem;
-  color: #2d3748;
-  text-transform: capitalize;
-}
-
-.dayDate {
-  display: block;
-  font-size: 0.85rem;
-  color: #718096;
-  margin-top: 0.2rem;
-}
-
-.dayContent {
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  flex: 1;
-}
-
-/* Karta Posiłku */
-.mealCard {
-  background: #fff;
-  border: 1px solid #edf2f7;
-  border-radius: 8px;
-  padding: 0.8rem;
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.mealCard:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-  border-color: #cbd5e0;
+  box-shadow: var(--shadow-md);
 }
 
-/* Zmiana kursora na kafelku posiłku */
-.mealCardClickable {
-  cursor: pointer;
-}
-
-.mealCardClickable:hover {
-  border-color: #3182ce; /* Niebieska ramka przy hoverze */
-  background-color: #ebf8ff;
-}
-
-/* Style dla Modala Szczegółów Posiłku */
-.detailLabel {
-  font-size: 0.85rem;
-  text-transform: uppercase;
-  color: #718096;
-  font-weight: 700;
-  margin-bottom: 0.2rem;
-  display: block;
-}
-
-.detailValue {
-  font-size: 1.1rem;
-  color: #2d3748;
-  margin-bottom: 1.5rem;
-  line-height: 1.5;
-}
-
-.detailImageContainer {
-  margin-top: 1rem;
-  border-radius: 8px;
-  overflow: hidden;
-  border: 1px solid #e2e8f0;
-  background: #f7fafc;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.detailImage {
-  max-width: 100%;
-  max-height: 300px;
-  object-fit: cover; /* lub contain, zależy jak chcesz kadrować */
-  display: block;
-}
-
-.noImagePlaceholder {
-  padding: 2rem;
-  color: #a0aec0;
-  font-style: italic;
-}
-
-.mealTypeLabel {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.5rem;
-  color: #718096;
-}
-
-.mealName {
-  font-weight: 600;
-  color: #2d3748;
-  font-size: 0.95rem;
-  margin-bottom: 0.3rem;
-  line-height: 1.3;
-}
-
-.mealInfo {
-  font-size: 0.8rem;
-  color: #718096;
-  font-style: italic;
-}
-
-.emptyMeal {
-  font-size: 0.8rem;
-  color: #a0aec0;
-  text-align: center;
-  padding: 1rem 0;
-  font-style: italic;
-  background: #f7fafc;
-  border-radius: 6px;
-}
-
-/* Kolory ikon dla różnych posiłków */
-.iconBreakfast { color: #d69e2e; } /* Żółty/Złoty */
-.iconLunch { color: #e53e3e; }     /* Czerwony */
-.iconDinner { color: #3182ce; }    /* Niebieski */
-.iconSnack { color: #805ad5; }     /* Fioletowy */
-
-.loadingContainer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 300px;
-  font-size: 1.2rem;
-  color: #718096;
-  gap: 10px;
-}
-
-/* Responsywność */
-@media (max-width: 1200px) {
-  .weekGrid {
-    grid-template-columns: repeat(3, 1fr); /* 3 dni na tabletach */
-  }
-}
-
-@media (max-width: 768px) {
-  .weekGrid {
-    grid-template-columns: 1fr; /* 1 dzień na telefonach */
-  }
-}
-
-.wrapper {
-  max-width: 1600px;
-  margin: 2rem auto;
-  padding: 0 1.5rem;
-}
-
-.header {
-  margin-bottom: 2rem;
-  border-bottom: 1px solid #e2e8f0;
-  padding-bottom: 1rem;
-}
-
-.title {
-  font-size: 1.8rem;
-  font-weight: 700;
-  color: #2d3748;
-}
-
-.subtitle {
-  color: #718096;
-  font-size: 1rem;
-  margin-top: 0.5rem;
-}
-
+/* WEEK GRID */
 .weekGrid {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 1.5rem;
+  gap: var(--spacing-lg);
   align-items: start;
 }
 
-/* Kolumna Dnia */
+/* DAY COLUMN */
 .dayColumn {
-  background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  /* No border, just shadow */
+  box-shadow: var(--shadow-md);
   overflow: hidden;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
   height: 100%;
-  position: relative; /* Dla pozycjonowania przycisku edycji */
 }
 
 .dayHeader {
-  background: #f7fafc;
-  padding: 1rem;
+  background: var(--color-primary-dark);
+  /* Darker orange or just primary */
+  background: #E07800;
+  /* Darker orange from screenshot "Monday 01-02-2025" pill */
+  padding: 0.75rem;
   text-align: center;
-  border-bottom: 1px solid #e2e8f0;
-  position: relative;
-}
-
-/* Przycisk Edycji (Ołówek) */
-.editButton {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: white;
-  border: 1px solid #cbd5e0;
-  border-radius: 6px;
-  padding: 4px;
-  color: #718096;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.editButton:hover {
-  background: #3182ce;
+  margin: var(--spacing-md);
+  border-radius: var(--radius-full);
   color: white;
-  border-color: #3182ce;
 }
 
 .dayName {
   display: block;
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   font-size: 1.1rem;
-  color: #2d3748;
   text-transform: capitalize;
 }
 
 .dayDate {
   display: block;
-  font-size: 0.85rem;
-  color: #718096;
-  margin-top: 0.2rem;
+  font-size: 0.9rem;
+  opacity: 0.9;
 }
 
 .dayContent {
-  padding: 1rem;
+  padding: 0 var(--spacing-md) var(--spacing-md);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--spacing-md);
   flex: 1;
 }
 
-/* Karta Posiłku */
+/* MEAL CARD (Pill) */
 .mealCard {
-  background: #fff;
-  border: 1px solid #edf2f7;
-  border-radius: 8px;
-  padding: 0.8rem;
-  transition: transform 0.2s, box-shadow 0.2s;
+  background: #FEEBC8;
+  /* Light Orange/Yellow Pill */
+  border: none;
+  border-radius: var(--radius-full);
+  padding: 0.75rem 1.5rem;
+  transition: transform 0.2s;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-weight: var(--font-weight-bold);
+  color: var(--text-main);
+  box-shadow: var(--shadow-sm);
 }
 
 .mealCard:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  background: #FBD38D;
+}
+
+/* Icon button inside meal card ("i" info icon) */
+.infoIcon {
+  background: var(--color-primary);
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: bold;
+  font-family: serif;
+  /* "i" look */
 }
 
 .mealTypeLabel {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.5rem;
+  display: none;
+  /* Hide confusing labels, rely on position or color if needed, but screenshot shows "Breakfast", "Snack", "Lunch" text */
 }
 
 .mealName {
-  font-weight: 600;
-  color: #2d3748;
-  font-size: 0.95rem;
-  margin-bottom: 0.3rem;
-  line-height: 1.3;
+  margin: 0;
+  font-size: 1rem;
 }
 
-.mealInfo {
-  font-size: 0.8rem;
-  color: #718096;
-  font-style: italic;
-}
-
-.emptyMeal {
-  font-size: 0.8rem;
-  color: #a0aec0;
-  text-align: center;
-  padding: 1rem 0;
-  font-style: italic;
-  background: #f7fafc;
-  border-radius: 6px;
-}
-
-/* Ikony */
-.iconBreakfast { color: #d69e2e; }
-.iconLunch { color: #e53e3e; }
-.iconDinner { color: #3182ce; }
-.iconSnack { color: #805ad5; }
-
-.loadingContainer {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 300px;
-  font-size: 1.2rem;
-  color: #718096;
-  gap: 10px;
-}
-
-/* Modal */
+/* MODAL */
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(0,0,0,0.5);
-  backdrop-filter: blur(2px);
+  background: rgba(37, 38, 65, 0.7);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -406,85 +164,21 @@
 }
 
 .modalCard {
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 2rem;
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
   width: 100%;
-  max-width: 500px;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  max-width: 600px;
 }
 
-.modalHeader {
-  margin-bottom: 1.5rem;
-  text-align: center;
-}
-
-.modalTitle {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #2d3748;
-}
-
-.formGroup {
-  margin-bottom: 1.2rem;
-}
-
-.label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 600;
-  color: #4a5568;
-  font-size: 0.9rem;
-}
-
-.select {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #cbd5e0;
-  border-radius: 8px;
-  font-size: 1rem;
-  background: #fff;
-}
-
-.modalActions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 2rem;
-}
-
-.cancelButton {
-  background: transparent;
-  border: none;
-  color: #718096;
-  cursor: pointer;
-  padding: 0.5rem 1rem;
-  font-weight: 600;
-}
-
-.submitButton {
-  background: #3182ce;
-  color: white;
-  border: none;
-  padding: 0.6rem 1.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.submitButton:hover {
-  background: #2b6cb0;
-}
-
-/* Responsywność */
 @media (max-width: 1200px) {
-  .weekGrid { grid-template-columns: repeat(3, 1fr); }
-}
-@media (max-width: 768px) {
-  .weekGrid { grid-template-columns: 1fr; }
+  .weekGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
-.fileInput {
-  margin-top: 0.5rem;
-  font-size: 0.9rem;
+@media (max-width: 768px) {
+  .weekGrid {
+    grid-template-columns: 1fr;
+  }
 }

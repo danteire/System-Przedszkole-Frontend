@@ -6,4 +6,5 @@ export interface AnnouncementDTO {
   publishedAt: string;  // LocalDateTime -> string (ISO 8601)
   authorId: number;     // Long -> number
   groupId: number | null; // Long -> number (zakładam null dla "wszystkich")
+  imagePath?: string;   // Path do obrazka
 }

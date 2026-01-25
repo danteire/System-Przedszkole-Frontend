@@ -1,117 +1,127 @@
 /* app/routes/events/Events.module.css */
 
 .pageWrapper {
-  /* Padding i max-width są kluczowe dla ładnego układu */
-  padding: 2rem;
+  padding: var(--spacing-lg);
   max-width: 1400px;
   margin: 0 auto;
 }
 
-/* --- SEKCJA GÓRNA (HERO) --- */
+/* --- HERO SECTION --- */
 .heroSection {
   display: flex;
-  gap: 1.5rem;
-  margin-bottom: 3rem;
-  height: 600px; /* Stała wysokość, żeby układ się nie rozjeżdżał */
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  height: 600px;
 }
 
-/* Lewa kolumna (3 małe karty) */
+/* LEFT COLUMN (Small Cards) */
 .leftColumn {
   width: 350px;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--spacing-md);
   flex-shrink: 0;
 }
 
-/* Prawa kolumna (Główne okno) */
+/* MAIN VIEW (Right Column) */
 .mainView {
   flex: 1;
-  background: var(--bg-white);
-  border-radius: var(--radius-2xl);
-  padding: 2rem;
-  border: 4px solid #faebd7; /* Ozdobna ramka */
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
+  /* The screenshot shows a clean card, maybe with a solid border or just shadow */
+  border: none;
   box-shadow: var(--shadow-lg);
-  overflow-y: auto; /* Przewijanie tylko wewnątrz treści ogłoszenia */
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
-/* --- SEKCJA DOLNA (GRID) --- */
+/* --- BOTTOM SECTION (Grid) --- */
 .bottomSection {
-  margin-top: 2rem;
+  margin-top: var(--spacing-xl);
 }
 
 .sectionTitle {
   font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--color-gray-800);
-  margin-bottom: 1.5rem;
-  border-bottom: 2px solid var(--color-primary-light);
-  padding-bottom: 0.5rem;
+  font-weight: var(--font-weight-black);
+  color: var(--text-main);
+  margin-bottom: var(--spacing-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.sectionTitle::before {
+  content: '';
+  display: block;
+  width: 8px;
+  height: 32px;
+  background: var(--color-primary);
+  border-radius: var(--radius-full);
 }
 
 .eventsGrid {
   display: grid;
-  /* Responsywna siatka: kolumny min. 300px */
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
+  gap: var(--spacing-lg);
 }
 
-/* --- STYLE KART (MAŁE) --- */
+/* --- SMALL CARD STYLES --- */
 .smallCard {
-  background: var(--bg-white);
-  border-radius: var(--radius-xl);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
   overflow: hidden;
   cursor: pointer;
   border: 2px solid transparent;
+  /* Prepare for active state */
   box-shadow: var(--shadow-sm);
-  transition: transform var(--transition-base), border-color var(--transition-base), box-shadow var(--transition-base);
+  transition: all var(--transition-base);
   display: flex;
   flex-direction: column;
-  height: 100%; /* Ważne dla grida na dole */
+  height: 100%;
 }
 
-/* Karta w lewej kolumnie ma stałą wysokość, żeby 3 zmieściły się w 600px */
 .leftColumn .smallCard {
-  flex: 1; 
+  flex: 1;
 }
 
 .smallCard:hover {
-  transform: translateY(-2px);
+  transform: translateY(-4px);
   box-shadow: var(--shadow-md);
 }
 
 .smallCard.active {
-  border-color: var(--color-warning); 
-  background-color: #fffaf0;
+  border-color: var(--color-primary);
+  background-color: var(--color-primary-light);
 }
 
 .cardImagePlaceholder {
-  height: 40%; /* Proporcja zdjęcia */
-  background-color: var(--color-gray-200);
+  height: 140px;
+  background-color: #EEE;
+  /* Neutral gray for placeholder */
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-gray-500);
-  font-weight: bold;
-  font-size: 1.2rem;
+  color: var(--text-muted);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-lg);
 }
 
 .cardContent {
-  padding: 1rem;
+  padding: var(--spacing-md);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  height: 80%;
+  flex: 1;
 }
 
 .cardTitle {
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-bold);
-  color: var(--color-gray-800);
-  margin-bottom: 0.5rem;
-  /* Ucinanie zbyt długich tytułów */
+  color: var(--text-main);
+  margin-bottom: var(--spacing-xs);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
@@ -121,76 +131,77 @@
 
 .cardMeta {
   font-size: var(--font-size-sm);
-  color: var(--color-gray-500);
+  color: var(--text-muted);
   display: flex;
   justify-content: space-between;
   margin-top: auto;
 }
 
-/* --- STYLE SZCZEGÓŁÓW (DUŻE OKNO) --- */
+/* --- DETAIL VIEW STYLES --- */
 .detailImage {
   width: 100%;
-  height: 250px;
-  background-color: var(--color-gray-200);
-  border-radius: var(--radius-xl);
-  margin-bottom: 1.5rem;
+  height: 300px;
+  background-color: #EEE;
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-lg);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-gray-500);
+  color: var(--text-muted);
   font-size: 3rem;
 }
 
 .detailHeader {
-  font-size: 2.5rem;
-  font-weight: 800;
-  margin-bottom: 1rem;
-  color: var(--color-gray-900);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-black);
+  margin-bottom: var(--spacing-sm);
+  color: var(--text-main);
+  line-height: 1.2;
 }
 
 .detailContent {
-  font-size: 1.1rem;
-  line-height: 1.7;
-  color: var(--color-gray-700);
-  margin-bottom: 2rem;
+  font-size: var(--font-size-lg);
+  line-height: 1.8;
+  color: var(--color-secondary);
+  margin-bottom: var(--spacing-xl);
   white-space: pre-wrap;
 }
 
 .detailFooter {
   margin-top: auto;
-  padding-top: 1rem;
-  border-top: 1px solid var(--color-gray-200);
+  padding-top: var(--spacing-md);
+  border-top: 1px solid #EEE;
   display: flex;
   justify-content: space-between;
   font-weight: var(--font-weight-medium);
-  color: var(--color-gray-600);
+  color: var(--text-muted);
 }
 
+/* --- MODAL --- */
 .modalOverlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(26, 32, 44, 0.6); 
-  backdrop-filter: blur(4px); 
+  background-color: rgba(37, 38, 65, 0.6);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000; 
-  padding: 1rem;
+  z-index: 1000;
+  padding: var(--spacing-md);
   animation: fadeIn 0.2s ease-out;
 }
 
 .modalContent {
-  background: var(--bg-white);
+  background: var(--bg-card);
   width: 100%;
   max-width: 900px;
-  max-height: 90vh; 
-  border-radius: var(--radius-2xl);
+  max-height: 90vh;
+  border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
-  border: 4px solid #faebd7;
-  overflow-y: auto; 
+  overflow-y: auto;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -199,60 +210,72 @@
 
 .closeButton {
   position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: var(--color-gray-100);
+  top: var(--spacing-md);
+  right: var(--spacing-md);
+  background: var(--bg-body);
   border: none;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   font-size: 1.5rem;
-  color: var(--color-gray-600);
-  transition: all 0.2s;
+  color: var(--text-muted);
+  transition: all var(--transition-fast);
   z-index: 10;
 }
 
 .closeButton:hover {
-  background: var(--color-danger);
+  background: var(--color-accent-red);
   color: white;
   transform: rotate(90deg);
 }
 
-/* Wnętrze modala (re-używamy styli z MainView dla spójności) */
 .modalBody {
-  padding: 2.5rem;
+  padding: var(--spacing-xl);
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
+
 .headerBar {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 1rem;
+  margin-bottom: var(--spacing-md);
 }
 
 .addButton {
-  background: var(--gradient-success);
+  background: var(--color-primary);
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: var(--radius-lg);
+  padding: 0.75rem 2rem;
+  border-radius: var(--radius-full);
   font-weight: var(--font-weight-bold);
   font-size: var(--font-size-base);
   cursor: pointer;
-  box-shadow: var(--shadow-md);
-  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: var(--shadow-orange);
+  transition: all var(--transition-fast);
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -260,31 +283,34 @@
 
 .addButton:hover {
   transform: translateY(-2px);
+  background: var(--color-primary-dark);
   box-shadow: var(--shadow-lg);
 }
 
-/* --- FORMULARZ TWORZENIA (Wewnątrz Modala) --- */
+/* --- FORMS --- */
 .formGroup {
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--spacing-lg);
 }
 
 .formLabel {
   display: block;
   margin-bottom: 0.5rem;
-  font-weight: var(--font-weight-medium);
-  color: var(--color-gray-700);
+  font-weight: var(--font-weight-bold);
+  color: var(--text-main);
+  font-size: var(--font-size-sm);
 }
 
 .formInput,
 .formTextarea,
 .formSelect {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid var(--color-gray-300);
+  padding: 12px 16px;
+  border: 2px solid #EEE;
   border-radius: var(--radius-md);
   font-family: inherit;
   font-size: 1rem;
   transition: border-color 0.2s;
+  background: var(--bg-input);
 }
 
 .formInput:focus,
@@ -292,7 +318,6 @@
 .formSelect:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
 }
 
 .formTextarea {
@@ -303,26 +328,39 @@
 .formActions {
   display: flex;
   justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 2rem;
+  gap: var(--spacing-md);
+  margin-top: var(--spacing-xl);
 }
 
 .cancelButton {
   background: transparent;
-  border: 1px solid var(--color-gray-300);
-  color: var(--color-gray-600);
-  padding: 0.75rem 1.5rem;
-  border-radius: var(--radius-md);
+  border: 2px solid var(--text-muted);
+  color: var(--text-muted);
+  padding: 0.75rem 2rem;
+  border-radius: var(--radius-full);
   cursor: pointer;
-  font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-bold);
+  transition: all 0.2s;
+}
+
+.cancelButton:hover {
+  background: #EEE;
+  color: var(--text-main);
 }
 
 .submitButton {
   background: var(--color-primary);
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: var(--radius-md);
+  padding: 0.75rem 3rem;
+  border-radius: var(--radius-full);
   cursor: pointer;
   font-weight: var(--font-weight-bold);
+  box-shadow: var(--shadow-orange);
+  transition: all 0.2s;
+}
+
+.submitButton:hover {
+  transform: translateY(-2px);
+  background: var(--color-primary-dark);
 }

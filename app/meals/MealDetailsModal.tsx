@@ -1,7 +1,9 @@
+// app/meals/MealDetailsModal.tsx
 import React from "react";
-import {type MealDTO } from "./mealTypes";
+import { type MealDTO } from "./mealTypes";
 import styles from "./MealsPage.module.css";
-import { X } from "lucide-react";
+import { X, Info, Utensils } from "lucide-react";
+import { api } from "~/utils/serviceAPI";
 
 interface MealDetailsModalProps {
   isOpen: boolean;
@@ -12,57 +14,72 @@ interface MealDetailsModalProps {
 export const MealDetailsModal: React.FC<MealDetailsModalProps> = ({ isOpen, onClose, meal }) => {
   if (!isOpen || !meal) return null;
 
-  // Tłumaczenie typów na polski (opcjonalne, jeśli masz to w enumie)
   const typeMap: Record<string, string> = {
-    BREAKFAST: "Śniadanie",
-    LUNCH: "Obiad",
-    DINNER: "Kolacja",
-    SNACK: "Podwieczorek"
+    BREAKFAST: "Breakfast",
+    LUNCH: "Lunch",
+    DINNER: "Dinner",
+    SNACK: "Snack"
   };
+
+  const imageUrl = api.getMealImageUrl(meal.imagePath);
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-           <h2 className={styles.modalTitle}>Szczegóły posiłku</h2>
-           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#718096' }}>
-               <X size={24} />
-           </button>
+        <div className={styles.modalHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+          <h2 className={styles.modalTitle} style={{ fontSize: '1.5rem' }}>Meal Details</h2>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+            <X size={24} />
+          </button>
         </div>
 
-        <div>
-            <span className={styles.detailLabel}>Nazwa</span>
-            <div className={styles.detailValue} style={{ fontWeight: 600 }}>{meal.name}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div>
+            <span className={styles.detailLabel} style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Name</span>
+            <div className={styles.detailValue} style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-main)' }}>{meal.name}</div>
+          </div>
 
-            <span className={styles.detailLabel}>Typ posiłku</span>
-            <div className={styles.detailValue}>{typeMap[meal.type] || meal.type}</div>
-
-            <span className={styles.detailLabel}>Informacje (alergeny, kcal)</span>
-            <div className={styles.detailValue}>
-                {meal.info || <span style={{ color: '#a0aec0', fontStyle: 'italic' }}>Brak dodatkowych informacji</span>}
+          <div>
+            <span className={styles.detailLabel} style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Type</span>
+            <div className={styles.detailValue} style={{ display: 'inline-block', padding: '4px 12px', background: 'var(--bg-body)', borderRadius: 'var(--radius-full)', fontWeight: 'bold', color: 'var(--color-primary)' }}>
+              {typeMap[meal.type] || meal.type}
             </div>
+          </div>
 
-            <span className={styles.detailLabel}>Zdjęcie</span>
-            <div className={styles.detailImageContainer}>
-                {meal.imagePath ? (
-                    // Zakładamy, że imagePath to URL dostępny dla frontendu. 
-                    // Jeśli to tylko nazwa pliku, musisz dodać prefix backendu, np: `http://localhost:8080/uploads/${meal.imagePath}`
-                    <img 
-                        src={meal.imagePath} 
-                        alt={meal.name} 
-                        className={styles.detailImage}
-                        onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none'; // Ukryj jeśli błąd ładowania
-                        }}
-                    />
-                ) : (
-                    <div className={styles.noImagePlaceholder}>Brak zdjęcia</div>
-                )}
+          <div>
+            <span className={styles.detailLabel} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
+              <Info size={14} /> Info (Allergens, Kcal)
+            </span>
+            <div className={styles.detailValue} style={{ padding: '10px', background: 'var(--bg-body)', borderRadius: 'var(--radius-lg)' }}>
+              {meal.info || <span style={{ color: '#a0aec0', fontStyle: 'italic' }}>No additional info</span>}
             </div>
+          </div>
+
+          <div>
+            <span className={styles.detailLabel} style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Photo</span>
+            <div className={styles.detailImageContainer} style={{ width: '100%', height: '200px', background: '#f7f9fc', borderRadius: 'var(--radius-xl)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt={meal.name}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).style.display = 'none';
+                    (e.target as HTMLImageElement).parentElement!.innerHTML = '<span style="color:#CBD5E0">Image load error</span>';
+                  }}
+                />
+              ) : (
+                <div style={{ color: '#CBD5E0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <Utensils size={32} />
+                  <span>No photo</span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className={styles.modalActions}>
-           <button type="button" onClick={onClose} className={styles.submitButton}>Zamknij</button>
+          <button type="button" onClick={onClose} className={styles.submitButton}>Close</button>
         </div>
       </div>
     </div>

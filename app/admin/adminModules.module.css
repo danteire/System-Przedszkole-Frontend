@@ -1,16 +1,32 @@
 /* app/routes/adminPanel/adminModules.module.css */
 .modulesWrapper {
   max-width: 1200px;
-  margin: var(--spacing-3xl) auto;
+  margin: var(--spacing-xl) auto;
   padding: 0 var(--spacing-xl);
 }
 
 .section {
-  background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+  background: var(--color-primary);
+  /* Orange Card for Admin sections */
   border-radius: var(--radius-2xl);
-  padding: var(--spacing-2xl);
+  padding: var(--spacing-xl);
   margin-bottom: var(--spacing-xl);
-  box-shadow: 0 10px 40px rgba(45, 55, 72, 0.4);
+  box-shadow: var(--shadow-orange);
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle pattern for admin/teacher section */
+.section::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 200px;
+  height: 200px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
 }
 
 .sectionHeader {
@@ -18,16 +34,19 @@
   align-items: center;
   gap: var(--spacing-md);
   margin-bottom: var(--spacing-xl);
+  position: relative;
+  z-index: 1;
 }
 
 .sectionIcon {
-  color: var(--bg-white);
+  color: white;
+  font-size: 2rem;
 }
 
 .sectionTitle {
-  font-size: var(--font-size-3xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--bg-white);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-black);
+  color: white;
   margin: 0;
 }
 
@@ -35,10 +54,12 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: var(--spacing-lg);
+  position: relative;
+  z-index: 1;
 }
 
 .moduleCard {
-  background: var(--bg-white);
+  background: var(--bg-card);
   border: none;
   border-radius: var(--radius-xl);
   padding: var(--spacing-xl) var(--spacing-lg);
@@ -47,143 +68,77 @@
   align-items: center;
   gap: var(--spacing-md);
   cursor: pointer;
-  transition: all var(--transition-slow);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   box-shadow: var(--shadow-md);
   position: relative;
   overflow: hidden;
+  text-decoration: none;
+  /* Just in case it's a link */
 }
 
-.moduleCard::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #4a5568 0%, #2d3748 100%);
-  transform: scaleX(0);
-  transition: transform var(--transition-slow);
-}
-
+/* Hover effects */
 .moduleCard:hover {
   transform: translateY(-8px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
-}
-
-.moduleCard:hover::before {
-  transform: scaleX(1);
-}
-
-.moduleCard.active {
-  transform: translateY(-8px);
-  box-shadow: 0 12px 30px rgba(74, 85, 104, 0.4);
-  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
-}
-
-.moduleCard.active::before {
-  transform: scaleX(1);
-  height: 6px;
-}
-
-.moduleCard[data-color="primary"] .iconWrapper {
-  background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
-}
-
-.moduleCard[data-color="success"] .iconWrapper {
-  background: var(--gradient-success);
-}
-
-.moduleCard[data-color="info"] .iconWrapper {
-  background: var(--gradient-info);
-}
-
-.moduleCard[data-color="warning"] .iconWrapper {
-  background: var(--gradient-warning);
+  box-shadow: var(--shadow-lg);
 }
 
 .iconWrapper {
-  width: 80px;
-  height: 80px;
-  border-radius: var(--radius-full);
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--bg-white);
-  transition: all var(--transition-slow);
+  color: white;
+  font-size: 1.8rem;
+  transition: transform 0.3s;
+  background: var(--color-primary);
+  /* Default icon bg */
 }
 
 .moduleCard:hover .iconWrapper {
   transform: scale(1.1) rotate(5deg);
 }
 
-.moduleCard.active .iconWrapper {
-  transform: scale(1.15) rotate(360deg);
+/* Data Color Variants - matched to Kinder theme or variables */
+.moduleCard[data-color="primary"] .iconWrapper {
+  background: var(--color-primary);
 }
+
+.moduleCard[data-color="success"] .iconWrapper {
+  background: var(--color-accent-green);
+}
+
+.moduleCard[data-color="info"] .iconWrapper {
+  background: var(--color-accent-blue);
+}
+
+.moduleCard[data-color="warning"] .iconWrapper {
+  background: var(--color-accent-red);
+}
+
+/* Using Red as 'Warning' or danger equivalent */
 
 .moduleLabel {
   font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-800);
-  text-align: center;
-}
-
-.viewCard {
-  background: rgba(255, 255, 255, 0.95);
-}
-
-.viewCard[data-color="outline-primary"] .iconWrapper {
-  background: transparent;
-  border: 3px solid #4a5568;
-  color: #4a5568;
-}
-
-.viewCard[data-color="outline-success"] .iconWrapper {
-  background: transparent;
-  border: 3px solid var(--color-success);
-  color: var(--color-success);
-}
-
-.viewCard[data-color="outline-info"] .iconWrapper {
-  background: transparent;
-  border: 3px solid var(--color-primary);
-  color: var(--color-primary);
-}
-
-.viewCard[data-color="outline-warning"] .iconWrapper {
-  background: transparent;
-  border: 3px solid var(--color-warning);
-  color: var(--color-warning);
-}
-
-.actionFeedback {
-  background: var(--gradient-success);
-  color: var(--bg-white);
-  padding: var(--spacing-lg) var(--spacing-xl);
-  border-radius: var(--radius-lg);
-  text-align: center;
-  animation: slideIn var(--transition-slow);
-  box-shadow: 0 8px 25px rgba(72, 187, 120, 0.3);
-}
-
-.feedbackText {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-medium);
-}
-
-.feedbackText strong {
   font-weight: var(--font-weight-bold);
-  text-transform: capitalize;
+  color: var(--text-main);
+  text-align: center;
 }
 
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+/* View/Action Cards specific styles */
+.viewCard {
+  /* Different style if needed, or unify */
+}
+
+.placeholder {
+  padding: var(--spacing-3xl);
+  text-align: center;
+  color: white;
+  font-size: var(--font-size-lg);
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: var(--radius-lg);
+  border: 2px dashed rgba(255, 255, 255, 0.4);
 }
 
 @media (max-width: 768px) {
@@ -197,29 +152,5 @@
 
   .moduleGrid {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: var(--spacing-md);
   }
-
-  .moduleCard {
-    padding: var(--spacing-lg) var(--spacing-md);
-  }
-
-  .iconWrapper {
-    width: 60px;
-    height: 60px;
-  }
-
-  .sectionTitle {
-    font-size: var(--font-size-2xl);
-  }
-}
-
-.placeholder {
-  padding: var(--spacing-3xl);
-  text-align: center;
-  color: var(--color-gray-600);
-  font-size: var(--font-size-lg);
-  background: var(--color-gray-50);
-  border-radius: var(--radius-md);
-  border: 2px dashed var(--color-gray-300);
 }

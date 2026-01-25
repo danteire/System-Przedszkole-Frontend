@@ -1,35 +1,38 @@
-*, *::before, *::after {
-  box-sizing: border-box;
-}
-
+/* app/styles/global.css */
 body {
-  font-family: 'Inter', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  
-  background-color: var(--bg-light);
-  color: var(--color-gray-800);
-  
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  
+  font-family: var(--font-family-base);
+  background-color: var(--bg-body);
+  color: var(--text-main);
   margin: 0;
   padding: 0;
   line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  /* Optional: Add a subtle pattern if available, for now just cream background */
+  background-image: radial-gradient(#F48C06 0.5px, transparent 0.5px), radial-gradient(#F48C06 0.5px, #FFFDF5 0.5px);
+  background-size: 40px 40px;
+  background-position: 0 0, 20px 20px;
+  /* Make the dots very subtle */
+  background-blend-mode: multiply;
+  /* Resetting background to just color for cleanliness if pattern is too much, 
+     but let's try a very subtle dot pattern to mimic the 'playful' vibe */
+  background: var(--bg-body);
 }
 
-h1, h2, h3, h4, h5, h6 {
-  color: var(--color-gray-900);
-  font-weight: var(--font-weight-bold);
-  line-height: 1.2;
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--text-main);
+  font-weight: var(--font-weight-black);
   margin-bottom: var(--spacing-md);
 }
-
-h1 { font-size: var(--font-size-3xl); }
-h2 { font-size: var(--font-size-2xl); }
-h3 { font-size: var(--font-size-xl); }
 
 a {
   color: var(--color-primary);
   text-decoration: none;
+  font-weight: var(--font-weight-bold);
   transition: color var(--transition-fast);
 }
 
@@ -37,29 +40,86 @@ a:hover {
   color: var(--color-primary-dark);
 }
 
+/* Common Layout Components */
+
+.container-custom {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--spacing-md);
+}
+
+/* Card Styles */
+.card-custom {
+  background-color: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-lg);
+  border: none;
+}
+
+/* Button Styles */
 .btn-primary {
-  background: var(--gradient-primary) !important;
+  background-color: var(--color-primary) !important;
+  color: white !important;
   border: none !important;
-  border-radius: var(--radius-md) !important;
-  box-shadow: var(--shadow-sm);
-  transition: transform var(--transition-base), box-shadow var(--transition-base);
+  border-radius: var(--radius-xl) !important;
+  padding: 0.5rem 2rem !important;
+  font-weight: var(--font-weight-bold) !important;
+  box-shadow: var(--shadow-orange);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+  cursor: pointer;
 }
 
 .btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
+  background-color: var(--color-primary-dark) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 15px 25px rgba(244, 140, 6, 0.4);
 }
 
-.bg-white-custom { background-color: var(--bg-white); }
-.text-primary { color: var(--color-primary); }
-.text-success { color: var(--color-success); }
-.shadow-card { box-shadow: var(--shadow-md); }
-.rounded-card { border-radius: var(--radius-lg); }
+/* Input Styles */
+input.form-control {
+  border-radius: var(--radius-xl) !important;
+  border: 1px solid #E2E8F0;
+  padding: 0.75rem 1.5rem;
+  background-color: var(--bg-input);
+}
 
-.card-custom {
-  background-color: var(--bg-white);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  padding: var(--spacing-lg);
-  border: 1px solid var(--color-gray-200);
+input.form-control:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+/* Utility Classes */
+.text-primary {
+  color: var(--color-primary) !important;
+}
+
+.text-muted {
+  color: var(--text-muted) !important;
+}
+
+.bg-white {
+  background-color: var(--bg-card) !important;
+}
+
+.rounded-xl {
+  border-radius: var(--radius-xl) !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #bbb;
 }
