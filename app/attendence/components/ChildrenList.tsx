@@ -26,15 +26,16 @@ export const ChildrenList: React.FC<ChildrenListProps> = ({
     <div className={styles.studentsGrid}>
       {children.length === 0 ? (
         <div className={styles.empty}>
-          <AlertCircle size={32} style={{ margin: '0 auto 10px', opacity: 0.5 }} />
-          No children linked to your account found.
+          <AlertCircle size={48} style={{ opacity: 0.3 }} />
+          <span>No children linked to your account found.</span>
         </div>
       ) : (
         children.map((child) => {
           const isSelected = selectedChildId === child.id;
-          const rawGroupId = (child as any).groupId ?? (child as any).groupID;
-          let groupName = "Unknown Group";
           
+          // Pobieranie nazwy grupy
+          const rawGroupId = (child as any).groupId ?? (child as any).groupID;
+          let groupName = "No Group Assigned";
           if (rawGroupId !== undefined && rawGroupId !== null) {
               const numericId = Number(rawGroupId);
               if (groupsMap.has(numericId)) {
@@ -46,33 +47,21 @@ export const ChildrenList: React.FC<ChildrenListProps> = ({
             <div
               key={child.id}
               onClick={() => onSelect(child.id)}
-              className={styles.studentCard}
-              style={{
-                cursor: 'pointer',
-                borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-gray-200)',
-                backgroundColor: isSelected ? '#f0f9ff' : 'var(--bg-white)'
-              }}
+              className={`${styles.studentCard} ${isSelected ? styles.active : ''}`}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                <div style={{
-                  width: '50px', height: '50px',
-                  borderRadius: '50%',
-                  background: isSelected ? 'var(--color-primary)' : '#e2e8f0',
-                  color: isSelected ? '#fff' : '#4a5568',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: 'bold', fontSize: '1.2rem'
-                }}>
-                  {child.firstName.charAt(0)}{child.lastName.charAt(0)}
-                </div>
+              {/* AVATAR */}
+              <div className={styles.avatar}>
+                {child.firstName.charAt(0)}{child.lastName.charAt(0)}
+              </div>
 
-                <div className={styles.studentInfo} style={{ marginBottom: 0 }}>
-                  <h3 className={styles.studentName}>
-                    {child.firstName} {child.lastName}
-                  </h3>
-                  <span style={{ fontSize: '0.85rem', color: '#718096' }}>
-                    Group name: <strong>{groupName}</strong>
-                  </span>
-                </div>
+              {/* INFO */}
+              <div className={styles.studentInfo}>
+                <h3 className={styles.studentName}>
+                  {child.firstName} {child.lastName}
+                </h3>
+                <span className={styles.groupName}>
+                  {groupName}
+                </span>
               </div>
             </div>
           );

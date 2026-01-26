@@ -364,3 +364,182 @@
   transform: translateY(-2px);
   background: var(--color-primary-dark);
 }
+
+/* --- DETAIL VIEW STYLES (Main View) --- */
+.detailImage {
+  width: 100%;
+  height: 300px; /* Stała wysokość kontenera */
+  background-color: #EEE;
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-lg);
+  overflow: hidden; /* Ukrywa wystające części obrazka */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+/* Klasa dla obrazka w głównym widoku - wypełnia kontener i przycina (cover) */
+.mainViewImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; 
+  display: block;
+}
+
+.noImageText {
+    font-size: 1.2rem;
+    color: #a0aec0;
+}
+
+/* --- MODAL STYLES (Specific) --- */
+.modalBodyNoPadding {
+    padding: 0; 
+    display: flex;
+    flex-direction: column;
+}
+
+.modalImageContainer {
+    width: 100%;
+    overflow: hidden;
+    background-color: #f7fafc;
+    border-top-left-radius: var(--radius-xl);
+    border-top-right-radius: var(--radius-xl);
+}
+
+
+.modalImageFull {
+    width: 100%;
+    height: auto;
+    display: block;
+    object-fit: contain;
+}
+
+.modalTextContent {
+    padding: var(--spacing-xl);
+}
+
+.modalContent {
+  max-height: 90vh; 
+  overflow-y: auto; 
+}
+/* --- GROUP MULTI-SELECT STYLES --- */
+
+.groupSelectorGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: var(--bg-input); /* #f7fafc lub podobny */
+  border: 2px solid #EEE;
+  border-radius: var(--radius-md);
+  padding: 12px;
+}
+
+/* Customowy Scrollbar dla listy */
+.groupSelectorGrid::-webkit-scrollbar {
+  width: 6px;
+}
+.groupSelectorGrid::-webkit-scrollbar-track {
+  background: transparent;
+}
+.groupSelectorGrid::-webkit-scrollbar-thumb {
+  background-color: #cbd5e0;
+  border-radius: 10px;
+}
+
+.groupOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background-color: white;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  user-select: none;
+}
+
+.groupOption:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Styl dla aktywnego elementu (gdy checkbox zaznaczony) */
+.groupOption:has(input:checked) {
+  border-color: var(--color-primary);
+  background-color: #fffaf0; /* Bardzo jasny pomarańcz */
+}
+
+.groupCheckbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.groupName {
+  font-size: 0.9rem;
+  color: var(--text-main);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.groupSummary {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+}
+
+/* --- UPLOAD AREA STYLES --- */
+
+.uploadArea {
+  border: 2px dashed #EEE;
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  text-align: center;
+  background-color: var(--bg-input);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.uploadArea:hover {
+  border-color: var(--color-primary);
+  background-color: #fffaf0;
+  color: var(--color-primary);
+}
+
+.uploadInput {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.fileName {
+  margin-top: 8px;
+  font-weight: bold;
+  color: var(--color-primary);
+  font-size: 0.9rem;
+  z-index: 2;
+  pointer-events: none;
+}

@@ -1,261 +1,449 @@
 /* app/routes/attendance/AttendanceView.module.css */
+
+/* --- LAYOUT --- */
 .container {
-  padding: var(--spacing-lg);
+  width: 100%;
   max-width: 1400px;
   margin: 0 auto;
+  padding: var(--spacing-lg);
+  box-sizing: border-box;
 }
 
+/* HEADER */
 .header {
   display: flex;
   align-items: center;
-  gap: var(--spacing-lg);
-  margin-bottom: var(--spacing-lg);
-  background: var(--bg-card);
-  padding: var(--spacing-lg);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-sm);
-}
-
-.backButton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  font-size: 1.2rem;
-  transition: transform var(--transition-base);
-}
-
-.backButton:hover {
-  transform: scale(1.1);
-  background: var(--color-primary-dark);
-}
-
-.headerInfo {
-  flex: 1;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-xl);
+  padding-bottom: var(--spacing-md);
+  border-bottom: 2px solid var(--color-gray-200, #e2e8f0);
 }
 
 .title {
-  font-size: var(--font-size-xl);
-  font-weight: var(--font-weight-black);
-  color: var(--text-main);
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text-main, #2d3748);
   margin: 0;
 }
 
-.date {
-  font-size: var(--font-size-sm);
+/* --- CHILDREN LIST (Grid) --- */
+.studentsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-2xl);
+}
+
+.studentCard {
+  background: var(--bg-card, white);
+  border: 2px solid transparent;
+  border-radius: var(--radius-xl, 16px);
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.1));
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.studentCard:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md, 0 4px 6px rgba(0,0,0,0.1));
+  border-color: var(--color-gray-300, #e2e8f0);
+}
+
+.studentCard.active {
+  border-color: var(--color-primary, #ed8936);
+  background-color: #fffaf0; /* Bardzo jasny pomarańcz */
+  box-shadow: var(--shadow-orange, 0 4px 14px 0 rgba(237, 137, 54, 0.39));
+}
+
+.avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--bg-body, #f7fafc);
+  color: var(--text-muted, #a0aec0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  border: 2px solid var(--color-gray-200, #e2e8f0);
+  transition: all 0.2s;
+}
+
+.studentCard.active .avatar {
+  background: var(--color-primary, #ed8936);
+  color: white;
+  border-color: var(--color-primary, #ed8936);
+}
+
+.studentInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.studentName {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-main, #2d3748);
+  margin: 0 0 4px 0;
+}
+
+.groupName {
+  font-size: 0.9rem;
+  color: var(--text-muted, #718096);
+}
+
+/* --- HISTORY SECTION (CSS GRID) --- */
+.historySection {
+  background: var(--bg-card, white);
+  border-radius: var(--radius-xl, 16px);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-lg, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+  animation: slideUp 0.3s ease-out;
+}
+
+.historyHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-lg);
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+/* GRID LAYOUT FOR HISTORY TABLE */
+/* Date | Status | Arrival | Departure */
+.historyGridLayout {
+  display: grid;
+  grid-template-columns: 1fr 120px 100px 100px; /* Responsywny układ */
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-gray-100, #edf2f7);
+}
+
+.historyHeaderRow {
+  background: var(--bg-body, #f7fafc);
+  border-radius: var(--radius-lg, 8px);
+  font-weight: 700;
+  color: var(--text-muted, #718096);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: none; /* Header ma tło, nie linię */
+}
+
+.historyRow {
+  transition: background 0.2s;
+}
+
+.historyRow:hover {
+  background-color: #f8fafc;
+}
+
+.historyRow:last-child {
+  border-bottom: none;
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-main);
+  font-size: 0.95rem;
+}
+
+.dateText {
+  font-weight: 600;
+}
+
+.mono {
+  font-family: monospace;
+  color: var(--text-main);
+  font-size: 1rem;
+}
+
+/* BADGES */
+.statusBadge {
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: white;
+  text-align: center;
+  display: inline-block;
+  min-width: 80px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.statusPRESENT { background-color: var(--color-accent-green, #48BB78); }
+.statusABSENT { background-color: var(--color-accent-red, #F56565); }
+.statusLATE { background-color: var(--color-primary, #ED8936); }
+.statusEXCUSED { background-color: var(--color-accent-blue, #4299E1); }
+
+/* BUTTONS */
+.actionBtn {
+  background: var(--color-danger, #e53e3e);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: var(--radius-full, 9999px);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 6px rgba(229, 62, 62, 0.3);
+}
+
+.actionBtn:hover {
+  transform: translateY(-2px);
+  background: #c53030;
+  box-shadow: 0 6px 8px rgba(229, 62, 62, 0.4);
+}
+
+/* EMPTY STATES & LOADING */
+.loading, .empty {
+  padding: 3rem;
+  text-align: center;
   color: var(--text-muted);
-  font-weight: var(--font-weight-bold);
-  margin: 0;
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
+  color: var(--color-primary);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* RESPONSYWNOŚĆ */
+@media (max-width: 768px) {
+  .historyGridLayout {
+    grid-template-columns: 1fr 100px; /* Zwiń do 2 kolumn */
+    gap: 0.5rem;
+    padding: 1rem 0.5rem;
+  }
+  
+  /* Ukryj czas na mobile, pokaż tylko datę i status */
+  .cell:nth-child(3), 
+  .cell:nth-child(4) { 
+    display: none; 
+  }
+  
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .actionBtn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+.teacherGridLayout {
+  display: grid;
+  grid-template-columns: 50px 1fr 1fr repeat(4, 80px); /* 4 kolumny na przyciski */
+  gap: 1rem;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--color-gray-100, #edf2f7);
+}
+
+/* Przyciski statusu (Kwadratowe/Zaokrąglone) */
+.statusBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px; /* Soft square */
+  border: 2px solid transparent;
+  background-color: var(--bg-body, #f7fafc);
+  color: var(--text-muted, #a0aec0);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.statusBtn:hover {
+  transform: scale(1.1);
+  background-color: #e2e8f0;
+}
+
+/* Active States Colors */
+.btnPresent.active {
+  background-color: var(--color-accent-green, #48BB78);
+  color: white;
+  box-shadow: 0 4px 10px rgba(72, 187, 120, 0.4);
+}
+
+.btnLate.active {
+  background-color: var(--color-primary, #ED8936);
+  color: white;
+  box-shadow: 0 4px 10px rgba(237, 137, 54, 0.4);
+}
+
+.btnAbsent.active {
+  background-color: var(--color-accent-red, #F56565);
+  color: white;
+  box-shadow: 0 4px 10px rgba(245, 101, 101, 0.4);
+}
+
+.btnExcused.active {
+  background-color: var(--color-accent-blue, #4299E1);
+  color: white;
+  box-shadow: 0 4px 10px rgba(66, 153, 225, 0.4);
+}
+
+/* Footer & Actions */
+.footer {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.saveButton {
+  background-color: var(--color-primary, #ed8936);
+  color: white;
+  border: none;
+  padding: 12px 32px;
+  border-radius: 9999px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--shadow-orange, 0 4px 14px 0 rgba(237, 137, 54, 0.39));
+  transition: all 0.2s;
+}
+
+.saveButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  background-color: var(--color-primary-dark, #dd6b20);
+}
+
+.saveButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .historyButton {
   display: flex;
   align-items: center;
-  gap: 5px;
-  padding: 0.5rem 1rem;
-  border: 2px solid #EEE;
-  border-radius: var(--radius-full);
-  background: var(--bg-card);
+  gap: 8px;
+  background: white;
+  border: 1px solid var(--color-gray-300, #e2e8f0);
+  padding: 8px 16px;
+  border-radius: 9999px;
   cursor: pointer;
-  font-weight: var(--font-weight-bold);
-  color: var(--text-muted);
+  font-weight: 600;
+  color: var(--text-main);
+  transition: all 0.2s;
 }
 
 .historyButton:hover {
-  background: #EEE;
-  color: var(--text-main);
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
-/* STUDENTS LIST (Grid Container) */
-.studentsGrid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-xs);
-  background: var(--bg-card);
-  padding: var(--spacing-lg);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-lg);
-  overflow-x: auto;
-}
-
-/* Common Grid Layout for Header and Rows */
-/* Columns: Index | Avatar/First | Last | IndexNo | Statuses (Present, Late, Absent, Excused) */
-.gridRow,
-.studentCard {
-  display: grid;
-  grid-template-columns: 40px 1fr 1fr 100px repeat(4, 80px);
-  /* 4 status columns */
-  gap: 1rem;
-  align-items: center;
-  padding: 0.75rem 1rem;
-}
-
-/* Header Row */
-.gridRow {
-  background: var(--color-primary);
-  border-radius: var(--radius-full);
-  margin-bottom: var(--spacing-sm);
-  color: white;
-  font-weight: var(--font-weight-bold);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  text-align: center;
-}
-
-.gridRow div {
-  display: flex;
-  justify-content: center;
-}
-
-.gridRow div:nth-child(2),
-.gridRow div:nth-child(3) {
-  justify-content: flex-start;
-  /* Names left aligned */
-}
-
-/* Row Content Styles */
-.studentCard {
-  background: var(--bg-body);
-  border-radius: var(--radius-full);
-  transition: background var(--transition-base);
-  border: 2px solid transparent;
-  text-align: center;
-}
-
-.studentCard:hover {
-  background: #FFF0E0;
-  border-color: #FBD38D;
-}
-
-/* Cell Styles */
-.cell {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: var(--font-weight-medium);
-  font-size: 0.95rem;
-}
-
-.cellLeft {
-  text-align: left;
-}
-
-.studentName {
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-main);
-  margin: 0;
-}
-
-/* Status Buttons within the grid cells */
-.statusBtn {
-  width: 32px;
-  height: 32px;
-  border: 2px solid var(--color-gray-300);
-  border-radius: 8px;
-  /* Soft square */
+.backButton {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--color-gray-300);
   background: white;
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
-  margin: 0 auto;
+  cursor: pointer;
+  color: var(--text-muted);
   transition: all 0.2s;
-  color: transparent;
-  /* Hide text, show color/icon */
-  position: relative;
 }
 
-/* Add checkmark on active/hover? */
-.statusBtn::after {
-  content: '✓';
-  color: white;
-  font-size: 1.2rem;
-  font-weight: bold;
-  display: none;
-}
-
-.statusBtn.active::after {
-  display: block;
-}
-
-.statusBtn:hover {
-  transform: scale(1.1);
-}
-
-.statusPresent.active {
-  background: var(--color-accent-green);
-  border-color: var(--color-accent-green);
-}
-
-.statusAbsent.active {
-  background: var(--color-accent-red);
-  border-color: var(--color-accent-red);
-}
-
-.statusLate.active {
+.backButton:hover {
   background: var(--color-primary);
+  color: white;
   border-color: var(--color-primary);
 }
 
-/* Late is orange/primary */
-.statusExcused.active {
-  background: var(--color-accent-blue);
-  border-color: var(--color-accent-blue);
-}
-
-.footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: var(--spacing-md);
-  margin-top: var(--spacing-lg);
-  padding: var(--spacing-lg) 0;
-}
-
-.saveButton {
-  padding: 0.75rem 3rem;
-  background: var(--color-primary);
-  color: white;
-  border: none;
-  border-radius: var(--radius-full);
-  cursor: pointer;
-  font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-lg);
-  box-shadow: var(--shadow-orange);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.saveButton:hover {
-  transform: scale(1.05);
-}
-
-.timeInputs {
-  display: none;
-}
-
-/* ERROR/SUCCESS BANNERS */
-.errorBanner {
-  background: #FED7D7;
-  color: #C53030;
-  padding: 1rem;
-  border-radius: var(--radius-md);
-  margin-bottom: 1rem;
-}
-
+/* Messages */
 .successBanner {
-  background: #C6F6D5;
-  color: #2F855A;
+  background-color: #f0fff4;
+  color: #2f855a;
   padding: 1rem;
-  border-radius: var(--radius-md);
-  margin-bottom: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border: 1px solid #9ae6b4;
+  text-align: center;
+  font-weight: 600;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.errorBanner {
+  background-color: #fff5f5;
+  color: #c53030;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border: 1px solid #feb2b2;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* Responsywność dla tabeli nauczyciela */
+@media (max-width: 768px) {
+  .teacherGridLayout {
+    /* Zwijamy do prostszego układu: Imię | Przyciski w nowej linii */
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .teacherGridLayout > div {
+      width: 100%;
+      text-align: left;
+  }
+  
+  /* Ukrywamy nagłówek na mobile */
+  .historyHeaderRow {
+      display: none;
+  }
+  
+  /* Kontener na przyciski w jednym rzędzie */
+  .teacherGridLayout {
+      position: relative;
+      padding-bottom: 3.5rem; /* Miejsce na przyciski */
+  }
+  
+  /* Hack: Wymuszamy przyciski na dole karty w jednym rzędzie */
+  .teacherGridLayout > div:nth-child(n+4) {
+      position: absolute;
+      bottom: 10px;
+      width: auto;
+  }
+  .teacherGridLayout > div:nth-child(4) { left: 10px; }
+  .teacherGridLayout > div:nth-child(5) { left: 60px; }
+  .teacherGridLayout > div:nth-child(6) { left: 110px; }
+  .teacherGridLayout > div:nth-child(7) { left: 160px; }
 }

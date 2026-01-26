@@ -1,4 +1,3 @@
-// app/routes/attendance/components/HistoryDatesTable.tsx
 import { useState, useEffect } from "react";
 import { api } from "~/utils/serviceAPI";
 import { ArrowLeft, RefreshCw, Calendar, ChevronRight } from "lucide-react";
@@ -44,6 +43,10 @@ export default function HistoryDatesTable({ groupId, onSelectDate, onBack }: Pro
 
   if (loading) return <div className={styles.loading}><RefreshCw className={styles.spinner} /> Loading history...</div>;
 
+  // Układ kolumn dla tej tabeli: Data | Liczba rekordów | Akcja
+  // Definiujemy grid inline lub w CSS, tutaj inline dla uproszczenia specyficznego widoku
+  const gridTemplate = "1fr 1fr 80px";
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -58,17 +61,20 @@ export default function HistoryDatesTable({ groupId, onSelectDate, onBack }: Pro
 
       {uniqueDates.length === 0 ? (
         <div className={styles.empty}>
-          <Calendar size={48} color="#CBD5E0" />
-          <p>No attendance history found for this group.</p>
+          <Calendar size={48} style={{ opacity: 0.3, marginBottom: '10px' }} />
+          <span>No attendance history found for this group.</span>
         </div>
       ) : (
-        <div className={styles.studentsGrid}>
-          <div className={styles.gridRow} style={{ gridTemplateColumns: '1fr 1fr 100px' }}>
-            <div style={{ justifyContent: 'flex-start', paddingLeft: '20px' }}>Date</div>
+        <div className={styles.historySection}>
+          
+          {/* HEADER ROW */}
+          <div className={`${styles.historyHeaderRow}`} style={{ display: 'grid', gridTemplateColumns: gridTemplate, padding: '1rem', alignItems: 'center' }}>
+            <div style={{ paddingLeft: '20px' }}>Date</div>
             <div>Records Count</div>
-            <div>Action</div>
+            <div style={{ textAlign: 'center' }}>Action</div>
           </div>
 
+          {/* DATA ROWS */}
           {uniqueDates.map((date) => {
             const count = allAttendance.filter(r => r.date === date).length;
 
@@ -76,18 +82,36 @@ export default function HistoryDatesTable({ groupId, onSelectDate, onBack }: Pro
               <div
                 key={date}
                 onClick={() => handleDateClick(date)}
-                className={styles.studentCard}
-                style={{ gridTemplateColumns: '1fr 1fr 100px', cursor: 'pointer' }}
+                className={styles.historyRow}
+                style={{ display: 'grid', gridTemplateColumns: gridTemplate, padding: '1rem', alignItems: 'center', cursor: 'pointer', borderBottom: '1px solid #f0f0f0' }}
               >
-                <div className={styles.cell} style={{ display: 'flex', alignItems: 'center', gap: '10px', paddingLeft: '20px' }}>
-                  <Calendar size={18} color="var(--color-primary)" />
-                  <span style={{ fontWeight: 'bold' }}>{date}</span>
+                {/* DATE */}
+                <div className={`${styles.cell} ${styles.dateText}`} style={{ paddingLeft: '20px' }}>
+                  <Calendar size={18} className={styles.iconMuted} />
+                  {date}
                 </div>
-                <div className={styles.cell}>{count} records</div>
+                
+                {/* COUNT */}
                 <div className={styles.cell}>
-                  <button className={styles.statusBtn} style={{ background: 'var(--color-primary)', color: 'white', width: '36px', height: '36px', borderRadius: '50%' }}>
-                    <ChevronRight size={20} />
-                  </button>
+                    <span style={{ fontWeight: 600, color: 'var(--text-main)' }}>{count}</span> 
+                    <span style={{ color: 'var(--text-muted)', marginLeft: '4px', fontSize: '0.9rem' }}>records</span>
+                </div>
+                
+                {/* ACTION BUTTON */}
+                <div style={{ textAlign: 'center' }}>
+                  <div style={{ 
+                      background: 'var(--bg-body)', 
+                      color: 'var(--text-muted)', 
+                      width: '32px', 
+                      height: '32px', 
+                      borderRadius: '50%', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center',
+                      margin: '0 auto'
+                  }}>
+                    <ChevronRight size={18} />
+                  </div>
                 </div>
               </div>
             );

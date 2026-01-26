@@ -1,8 +1,7 @@
-// app/groups/AttendanceHistory.tsx
 import React, { useState, useEffect } from 'react';
 import { api } from '../utils/serviceAPI';
-import styles from '../attendence/AttendanceView.module.css'; // Unified styles
-import { ArrowLeft, RefreshCw, Calendar, Clock, UserCheck } from "lucide-react";
+import styles from '../attendence/AttendanceView.module.css'; // Ujednolicony CSS
+import { ArrowLeft, RefreshCw, Calendar, UserCheck, Clock } from "lucide-react";
 
 export interface AttendanceDTO {
   id: number;
@@ -12,6 +11,12 @@ export interface AttendanceDTO {
   departureTime: string | null;
   preschoolerId: number;
   recordedById: number;
+}
+
+interface AccountSimple {
+    id: number;
+    firstName: string;
+    lastName: string;
 }
 
 interface AttendanceHistoryProps {
@@ -24,19 +29,36 @@ const AttendanceHistory: React.FC<AttendanceHistoryProps> = ({ preschoolerId, pr
   const [history, setHistory] = useState<AttendanceDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  const [userMap, setUserMap] = useState<Record<number, string>>({});
 
   useEffect(() => {
-    const fetchHistory = async () => {
+    const fetchData = async () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await api.get<AttendanceDTO[]>(`/attendance/preschooler/${preschoolerId}`);
-        if (Array.isArray(response)) {
-          const sorted = response.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          setHistory(sorted);
+        const historyResponse = await api.get<AttendanceDTO[]>(`/attendance/preschooler/${preschoolerId}`);
+        
+        if (Array.isArray(historyResponse)) {
+            const historyData = historyResponse.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            setHistory(historyData);
         } else {
-          setHistory([]);
+            setHistory([]);
         }
+
+        try {
+            const accountsResponse = await api.get<AccountSimple[]>("/accounts");
+            if (Array.isArray(accountsResponse)) {
+                const map: Record<number, string> = {};
+                accountsResponse.forEach(acc => {
+                    map[acc.id] = `${acc.firstName} ${acc.lastName}`;
+                });
+                setUserMap(map);
+            }
+        } catch (accountError) {
+            console.warn("Could not fetch accounts map:", accountError);
+        }
+
       } catch (err: any) {
         console.error(err);
         setError("Failed to fetch history.");
@@ -44,19 +66,23 @@ const AttendanceHistory: React.FC<AttendanceHistoryProps> = ({ preschoolerId, pr
         setLoading(false);
       }
     };
-    fetchHistory();
+
+    fetchData();
   }, [preschoolerId]);
 
   if (loading) return <div className={styles.loading}><RefreshCw className={styles.spinner} /> Loading history...</div>;
 
   if (error) {
     return (
-      <div className={styles.errorBanner} style={{ margin: '20px' }}>
-        {error}
+      <div className={styles.errorContainer}>
+        <div className={styles.errorBanner}>{error}</div>
         <button className={styles.retryButton} onClick={onBack}>Back</button>
       </div>
     );
   }
+
+  // Definicja układu kolumn: Data | Status | Wejście | Wyjście | Zapisane przez
+  const gridTemplate = "140px 120px 100px 100px 1fr";
 
   return (
     <div className={styles.container}>
@@ -71,45 +97,60 @@ const AttendanceHistory: React.FC<AttendanceHistoryProps> = ({ preschoolerId, pr
       </div>
 
       {history.length === 0 ? (
-        <div className={styles.empty}>No attendance records found for this student.</div>
+        <div className={styles.empty}>
+            <Calendar size={48} style={{ opacity: 0.3, marginBottom: '10px' }} />
+            <span>No attendance records found for this student.</span>
+        </div>
       ) : (
-        <div className={styles.studentsGrid}>
-          <div className={styles.gridRow} style={{ gridTemplateColumns: '120px 100px 100px 100px 1fr' }}>
-            <div style={{ justifyContent: 'flex-start', paddingLeft: '20px' }}>Date</div>
-            <div>Status</div>
-            <div>Arrival</div>
-            <div>Departure</div>
-            <div>Recorded By (ID)</div>
+        <div className={styles.historySection}> {/* Kontener "białej karty" */}
+          
+          {/* HEADER ROW */}
+          <div 
+            className={styles.historyHeaderRow} 
+            style={{ display: 'grid', gridTemplateColumns: gridTemplate, padding: '1rem', alignItems: 'center' }}
+          >
+            <div style={{ paddingLeft: '10px' }}>Date</div>
+            <div style={{ textAlign: 'center' }}>Status</div>
+            <div style={{ textAlign: 'center' }}>Arrival</div>
+            <div style={{ textAlign: 'center' }}>Departure</div>
+            <div>Recorded By</div> 
           </div>
 
+          {/* DATA ROWS */}
           {history.map((record) => (
-            <div key={record.id} className={styles.studentCard} style={{ gridTemplateColumns: '120px 100px 100px 100px 1fr' }}>
-              <div className={`${styles.cell} ${styles.cellLeft}`} style={{ paddingLeft: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Calendar size={14} color="var(--text-muted)" />
+            <div 
+                key={record.id} 
+                className={styles.historyRow} 
+                style={{ display: 'grid', gridTemplateColumns: gridTemplate, padding: '1rem', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}
+            >
+              
+              {/* DATE CELL */}
+              <div className={`${styles.cell} ${styles.dateText}`} style={{ paddingLeft: '10px' }}>
+                <Calendar size={16} color="var(--text-muted)" />
                 {record.date}
               </div>
-              <div className={styles.cell}>
-                <span
-                  style={{
-                    padding: '4px 12px',
-                    borderRadius: '20px',
-                    fontSize: '0.8rem',
-                    fontWeight: 'bold',
-                    background:
-                      record.status === 'PRESENT' ? 'var(--color-accent-green)' :
-                        record.status === 'ABSENT' ? 'var(--color-accent-red)' :
-                          record.status === 'LATE' ? 'var(--color-primary)' :
-                            'var(--color-accent-blue)',
-                    color: 'white'
-                  }}
-                >
+              
+              {/* STATUS CELL */}
+              <div style={{ textAlign: 'center' }}>
+                <span className={`${styles.statusBadge} ${styles['status' + record.status]}`}>
                   {record.status}
                 </span>
               </div>
-              <div className={styles.cell}>{record.arrivalTime ? record.arrivalTime.substring(0, 5) : '-'}</div>
-              <div className={styles.cell}>{record.departureTime ? record.departureTime.substring(0, 5) : '-'}</div>
-              <div className={styles.cell}>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>ID: {record.recordedById}</span>
+              
+              {/* ARRIVAL */}
+              <div className={`${styles.cell} ${styles.mono}`} style={{ justifyContent: 'center' }}>
+                {record.arrivalTime ? record.arrivalTime.substring(0, 5) : '-'}
+              </div>
+
+              {/* DEPARTURE */}
+              <div className={`${styles.cell} ${styles.mono}`} style={{ justifyContent: 'center' }}>
+                {record.departureTime ? record.departureTime.substring(0, 5) : '-'}
+              </div>
+              
+              {/* RECORDED BY CELL */}
+              <div className={styles.cell} style={{ color: 'var(--text-muted)' }}>
+                 <UserCheck size={16} style={{ marginRight: '6px' }}/>
+                 {userMap[record.recordedById] || `ID: ${record.recordedById}`}
               </div>
             </div>
           ))}

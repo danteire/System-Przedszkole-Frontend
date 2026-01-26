@@ -89,10 +89,13 @@
 }
 
 .navItem.active {
-  background-color: var(--color-accent-red);
-  /* Active state red circle */
+  background-color: transparent;
+  border: 2px solid white;
   color: white;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: none;
+  width: auto;
+  padding: 0 15px;
+  border-radius: 12px;
 }
 
 /* Specific icon styles if needed */

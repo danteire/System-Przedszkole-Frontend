@@ -1,9 +1,9 @@
-// app/meals/MealDetailsModal.tsx
 import React from "react";
 import { type MealDTO } from "./mealTypes";
 import styles from "./MealsPage.module.css";
 import { X, Info, Utensils } from "lucide-react";
-import { api } from "~/utils/serviceAPI";
+// Upewnij się, że importujesz SecureAnnouncementImage lub SecureImage (zależnie jak nazwałeś komponent w utils)
+import { SecureAnnouncementImage } from "~/utils/SecureAnnouncementImage";
 
 interface MealDetailsModalProps {
   isOpen: boolean;
@@ -21,55 +21,59 @@ export const MealDetailsModal: React.FC<MealDetailsModalProps> = ({ isOpen, onCl
     SNACK: "Snack"
   };
 
-  const imageUrl = api.getMealImageUrl(meal.imagePath);
-
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2 className={styles.modalTitle} style={{ fontSize: '1.5rem' }}>Meal Details</h2>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>
+        
+        {/* HEADER */}
+        <div className={styles.modalHeader}>
+          <h2 className={styles.modalTitle}>Meal Details</h2>
+          <button onClick={onClose} className={styles.closeButton}>
             <X size={24} />
           </button>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          
+          {/* NAME */}
           <div>
-            <span className={styles.detailLabel} style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Name</span>
-            <div className={styles.detailValue} style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--text-main)' }}>{meal.name}</div>
+            <span className={styles.detailLabel}>Name</span>
+            <div className={styles.detailValueLarge}>{meal.name}</div>
           </div>
 
+          {/* TYPE */}
           <div>
-            <span className={styles.detailLabel} style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Type</span>
-            <div className={styles.detailValue} style={{ display: 'inline-block', padding: '4px 12px', background: 'var(--bg-body)', borderRadius: 'var(--radius-full)', fontWeight: 'bold', color: 'var(--color-primary)' }}>
+            <span className={styles.detailLabel}>Type</span>
+            <div className={styles.typeBadge}>
               {typeMap[meal.type] || meal.type}
             </div>
           </div>
 
+          {/* INFO */}
           <div>
-            <span className={styles.detailLabel} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '4px' }}>
+            <span className={styles.detailLabel} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
               <Info size={14} /> Info (Allergens, Kcal)
             </span>
-            <div className={styles.detailValue} style={{ padding: '10px', background: 'var(--bg-body)', borderRadius: 'var(--radius-lg)' }}>
+            <div className={styles.infoBox}>
               {meal.info || <span style={{ color: '#a0aec0', fontStyle: 'italic' }}>No additional info</span>}
             </div>
           </div>
 
+          {/* PHOTO */}
           <div>
-            <span className={styles.detailLabel} style={{ display: 'block', fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '4px' }}>Photo</span>
-            <div className={styles.detailImageContainer} style={{ width: '100%', height: '200px', background: '#f7f9fc', borderRadius: 'var(--radius-xl)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {imageUrl ? (
-                <img
-                  src={imageUrl}
+            <span className={styles.detailLabel}>Photo</span>
+            
+            {/* Kontener o stałej wysokości */}
+            <div className={styles.detailImageContainer}>
+              {meal.imagePath ? (
+                <SecureAnnouncementImage 
+                  imagePath={meal.imagePath} 
                   alt={meal.name}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).style.display = 'none';
-                    (e.target as HTMLImageElement).parentElement!.innerHTML = '<span style="color:#CBD5E0">Image load error</span>';
-                  }}
+                  // Obrazek dopasuje się do kontenera (contain)
+                  className={styles.modalImageFull}
                 />
               ) : (
-                <div style={{ color: '#CBD5E0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div className={styles.noImagePlaceholder}>
                   <Utensils size={32} />
                   <span>No photo</span>
                 </div>

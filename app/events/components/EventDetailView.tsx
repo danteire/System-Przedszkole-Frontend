@@ -1,6 +1,6 @@
 import styles from "../Events.module.css";
 import { type AnnouncementDTO } from "../eventsTypes";
-import { api } from "~/utils/serviceAPI";
+import { SecureAnnouncementImage } from "~/utils/SecureAnnouncementImage";
 
 interface Props {
   announcement: AnnouncementDTO | null;
@@ -11,21 +11,25 @@ export default function EventMainView({ announcement }: Props) {
     return (
       <div className={styles.mainView}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#aaa' }}>
-          Wybierz wydarzenie, aby zobaczyć szczegóły.
+          Select an event to view details.
         </div>
       </div>
     );
   }
 
-  const imageUrl = api.getAnnouncementImageUrl(announcement.imagePath);
-
   return (
     <div className={styles.mainView}>
+      {/* Kontener obrazka ma stałą wysokość zdefiniowaną w CSS (.detailImage) */}
       <div className={styles.detailImage}>
-        {imageUrl ? (
-          <img src={imageUrl} alt={announcement.title} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }} />
+        {announcement.imagePath ? (
+          <SecureAnnouncementImage 
+            imagePath={announcement.imagePath} 
+            alt={announcement.title}
+            // Klasa wymusza wypełnienie kontenera i przycięcie nadmiaru (cover)
+            className={styles.mainViewImage} 
+          />
         ) : (
-          <span>Brak zdjęcia</span>
+          <span className={styles.noImageText}>No image available</span>
         )}
       </div>
 
@@ -36,9 +40,9 @@ export default function EventMainView({ announcement }: Props) {
       </p>
 
       <div className={styles.detailFooter}>
-        <span>Autor ID: {announcement.authorId}</span>
+        <span>Author ID: {announcement.authorId}</span>
         <span>
-          Odbiorcy: {announcement.groupId ? `Grupa #${announcement.groupId}` : "Wszyscy"}
+          Recipients: {announcement.groupId ? `Group #${announcement.groupId}` : "Everyone"}
         </span>
       </div>
     </div>

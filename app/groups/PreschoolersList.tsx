@@ -1,9 +1,8 @@
-// app/groups/PreschoolersList.tsx
 import React, { useState, useEffect } from 'react';
 import { api } from '../utils/serviceAPI';
 import styles from '../attendence/AttendanceView.module.css'; // Unified styles
-import AttendanceHistory from './AttendanceHistory';
-import { ArrowLeft, RefreshCw, ChevronRight, User } from "lucide-react";
+import AttendanceHistory from './AttendanceHistory'; // Upewnij się co do ścieżki importu
+import { ArrowLeft, RefreshCw, ChevronRight, User, GraduationCap } from "lucide-react";
 
 interface Preschooler {
   id: number;
@@ -62,6 +61,9 @@ const PreschoolersList: React.FC<PreschoolersListProps> = ({ groupId, groupName,
     );
   }
 
+  // Grid: ID | Imię | Nazwisko | Historia
+  const gridTemplate = "60px 1fr 1fr 120px";
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -70,33 +72,63 @@ const PreschoolersList: React.FC<PreschoolersListProps> = ({ groupId, groupName,
         </button>
         <div className={styles.headerInfo}>
           <h1 className={styles.title}>Group: {groupName}</h1>
-          <p className={styles.date}>Student list</p>
+          <p className={styles.date}>Student list & attendance records</p>
         </div>
       </div>
 
       {kids.length === 0 ? (
-        <div className={styles.empty}>No students in this group.</div>
+        <div className={styles.empty}>
+            <GraduationCap size={48} style={{ opacity: 0.3, marginBottom: '10px' }} />
+            <span>No students in this group.</span>
+        </div>
       ) : (
-        <div className={styles.studentsGrid}>
-          <div className={styles.gridRow} style={{ gridTemplateColumns: '50px 1fr 1fr 120px' }}>
-            <div style={{ justifyContent: 'center' }}>ID</div>
-            <div style={{ justifyContent: 'flex-start' }}>First Name</div>
-            <div style={{ justifyContent: 'flex-start' }}>Last Name</div>
-            <div>History</div>
+        <div className={styles.historySection}>
+          
+          {/* HEADER ROW */}
+          <div className={styles.historyHeaderRow} style={{ display: 'grid', gridTemplateColumns: gridTemplate, padding: '1rem', alignItems: 'center' }}>
+            <div style={{ textAlign: 'center' }}>ID</div>
+            <div style={{ paddingLeft: '10px' }}>First Name</div>
+            <div>Last Name</div>
+            <div style={{ textAlign: 'center' }}>History</div>
           </div>
 
+          {/* DATA ROWS */}
           {kids.map((kid) => (
-            <div key={kid.id} className={styles.studentCard} style={{ gridTemplateColumns: '50px 1fr 1fr 120px' }}>
-              <div className={styles.cell} style={{ textAlign: 'center' }}>{kid.id}</div>
-              <div className={`${styles.cell} ${styles.cellLeft}`}>{kid.firstName}</div>
-              <div className={`${styles.cell} ${styles.cellLeft}`}>{kid.lastName}</div>
-              <div className={styles.cell}>
+            <div key={kid.id} className={styles.historyRow} style={{ display: 'grid', gridTemplateColumns: gridTemplate, padding: '1rem', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
+              
+              {/* ID */}
+              <div className={styles.cell} style={{ justifyContent: 'center', fontWeight: 'bold', color: 'var(--text-muted)' }}>
+                  {kid.id}
+              </div>
+              
+              {/* FIRST NAME */}
+              <div className={styles.cell} style={{ paddingLeft: '10px', fontWeight: 600 }}>
+                  {kid.firstName}
+              </div>
+              
+              {/* LAST NAME */}
+              <div className={styles.cell} style={{ fontWeight: 600 }}>
+                  {kid.lastName}
+              </div>
+              
+              {/* ACTION BUTTON */}
+              <div style={{ textAlign: 'center' }}>
                 <button
-                  className={styles.statusBtn}
-                  style={{ background: 'var(--color-accent-blue)', color: 'white', width: 'auto', height: '32px', borderRadius: '20px', padding: '0 15px', fontSize: '0.8rem' }}
+                  className={styles.statusBtn} // Reuse existing class
+                  style={{ 
+                      background: 'var(--bg-body)', 
+                      color: 'var(--text-main)', 
+                      width: 'auto', 
+                      height: '32px', 
+                      borderRadius: '20px', 
+                      padding: '0 12px', 
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      border: '1px solid var(--color-gray-200)'
+                  }}
                   onClick={() => setSelectedChildHistory(kid)}
                 >
-                  History <ChevronRight size={14} style={{ marginLeft: '5px' }} />
+                  View <ChevronRight size={14} style={{ marginLeft: '4px' }} />
                 </button>
               </div>
             </div>

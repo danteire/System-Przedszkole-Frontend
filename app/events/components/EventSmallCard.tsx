@@ -29,7 +29,7 @@ export default function EventSmallCard({ announcement, isActive, onClick }: Prop
             onError={() => setImgError(true)}
           />
         ) : (
-          <span>Obrazek</span>
+          <span>Image</span>
         )}
       </div>
 
@@ -37,7 +37,7 @@ export default function EventSmallCard({ announcement, isActive, onClick }: Prop
         <h3 className={styles.cardTitle}>{announcement.title}</h3>
         <div className={styles.cardMeta}>
           <span>{dateStr}</span>
-          <span>Grupa: {announcement.groupId ?? "Wszystkie"}</span>
+          <span>Group: {announcement.groupId ?? "All"}</span>
         </div>
       </div>
     </div>

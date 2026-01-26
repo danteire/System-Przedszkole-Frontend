@@ -71,27 +71,33 @@
 }
 
 .dayHeader {
-  background: var(--color-primary-dark);
-  /* Darker orange or just primary */
-  background: #E07800;
-  /* Darker orange from screenshot "Monday 01-02-2025" pill */
+  background: #E07800; /* Główny kolor pomarańczowy */
   padding: 0.75rem;
-  text-align: center;
   margin: var(--spacing-md);
-  border-radius: var(--radius-full);
+  border-radius: 1.5rem; /* Większe zaokrąglenie dla całego nagłówka */
   color: white;
+  
+  /* Flexbox do układu: Nazwa dnia u góry, przycisk na dole */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); /* Lekki cień wewnętrzny dla głębi */
 }
 
 .dayName {
   display: block;
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-black);
   font-size: 1.1rem;
   text-transform: capitalize;
+  line-height: 1.1;
 }
 
 .dayDate {
   display: block;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   opacity: 0.9;
 }
 
@@ -181,4 +187,284 @@
   .weekGrid {
     grid-template-columns: 1fr;
   }
+}
+/* --- MODAL DETAILS STYLES --- */
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modalTitle {
+  font-size: 1.5rem;
+  margin: 0;
+  font-weight: bold;
+}
+
+.closeButton {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  padding: 5px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.closeButton:hover {
+  background-color: #eee;
+}
+
+.detailLabel {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-muted); /* lub #718096 */
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+.detailValueLarge {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.typeBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  background: var(--bg-body); /* lub #f7fafc */
+  border-radius: var(--radius-full);
+  font-weight: bold;
+  color: var(--color-primary);
+  border: 1px solid #eee;
+}
+
+.infoBox {
+  padding: 10px;
+  background: var(--bg-body);
+  border-radius: var(--radius-lg);
+  border: 1px solid #eee;
+}
+
+/* --- IMAGE STYLES --- */
+
+.detailImageContainer {
+  width: 100%;
+  height: 250px; /* Ustalona wysokość pola */
+  background: #f7f9fc;
+  border-radius: var(--radius-xl);
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.modalImageFull {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* Kluczowe: obrazek skaluje się, żeby się zmieścić w całości */
+  display: block;
+}
+
+.noImagePlaceholder {
+  color: #CBD5E0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  font-weight: 500;
+}
+
+.modalActions {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.submitButton {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: var(--radius-full);
+  font-weight: bold;
+  cursor: pointer;
+}
+.editButton {
+  background: white;
+  color: #E07800; /* Kolor tekstu taki sam jak tło nagłówka */
+  border: none;
+  
+  /* Rozmiar i kształt */
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  
+  /* Układ ikony i tekstu */
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.15); /* Cień, żeby przycisk "wyskoczył" */
+  transition: all 0.2s ease;
+}
+
+.editButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+  background-color: #FFFAF0; /* Bardzo jasny kremowy przy hover */
+}
+
+.editButton:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* --- FORM STYLES (Unified) --- */
+
+.modalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* Inputs styling matching the clean aesthetic */
+.formInput,
+.formTextarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #EEE;
+  border-radius: var(--radius-md); /* Użyj zmiennej lub 8px */
+  font-size: 1rem;
+  background: var(--bg-body); /* Użyj zmiennej lub #f7fafc */
+  color: var(--text-main);
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.formInput:focus,
+.formTextarea:focus {
+  outline: none;
+  border-color: var(--color-primary); /* Pomarańczowy */
+  background: white;
+  box-shadow: 0 0 0 3px rgba(224, 120, 0, 0.1);
+}
+
+.formTextarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+/* --- TYPE SELECTOR (Grid) --- */
+.typeGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.typeOption {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: var(--radius-full); /* lub 9999px */
+  border: 2px solid #EEE;
+  background: white;
+  color: var(--text-muted);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.typeOption:hover {
+  background: #f7fafc;
+  border-color: #cbd5e0;
+}
+
+.typeOption.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: white;
+  box-shadow: var(--shadow-sm);
+}
+
+/* --- UPLOAD AREA --- */
+.uploadArea {
+  position: relative;
+  border: 2px dashed #CBD5E0;
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  text-align: center;
+  background: var(--bg-body);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.uploadArea:hover {
+  border-color: var(--color-primary);
+  background: #fffaf0; /* Bardzo jasny pomarańcz */
+  color: var(--color-primary);
+}
+
+/* Ukrywamy input file, ale rozciągamy go na cały kontener */
+.uploadArea input[type="file"] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.fileName {
+  margin-top: 8px;
+  font-weight: bold;
+  color: var(--color-primary);
+  font-size: 0.9rem;
+  z-index: 2; /* Żeby był nad inputem wizualnie, choć input przechwytuje klik */
+  pointer-events: none;
+}
+
+.uploadIcon {
+  margin-bottom: 8px;
+}
+
+/* --- BUTTONS --- */
+.cancelButton {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-weight: 600;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  border-radius: var(--radius-full);
+  transition: background 0.2s;
+}
+
+.cancelButton:hover {
+  background: #eee;
+  color: var(--text-main);
 }

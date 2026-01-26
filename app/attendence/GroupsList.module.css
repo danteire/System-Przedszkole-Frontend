@@ -1,169 +1,208 @@
 /* app/routes/attendance/GroupsList.module.css */
+
 .container {
-  padding: var(--spacing-lg);
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
+  padding: var(--spacing-lg);
+  box-sizing: border-box;
 }
 
+/* HEADER */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: var(--spacing-xl);
-  padding-bottom: var(--spacing-md);
-  border-bottom: 2px solid #EEE;
+  margin-bottom: var(--spacing-2xl);
+  padding-bottom: var(--spacing-lg);
+  border-bottom: 2px solid var(--color-gray-200, #e2e8f0);
 }
 
 .title {
-  font-size: var(--font-size-2xl);
-  font-weight: var(--font-weight-black);
-  color: var(--text-main);
-  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text-main, #2d3748);
+  margin: 0 0 4px 0;
+  letter-spacing: -0.02em;
 }
 
 .subtitle {
-  font-size: var(--font-size-base);
-  color: var(--text-muted);
+  font-size: 1rem;
+  color: var(--text-muted, #718096);
   margin: 0;
 }
 
+/* BUTTONS */
 .refreshButton {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  padding: 0.5rem 1rem;
-  background: var(--bg-white);
-  border: 2px solid var(--text-muted);
-  color: var(--text-muted);
-  border-radius: var(--radius-full);
+  gap: 8px;
+  padding: 10px 20px;
+  background: white;
+  border: 1px solid var(--color-gray-300, #cbd5e0);
+  color: var(--text-main, #2d3748);
+  border-radius: 9999px;
   cursor: pointer;
-  transition: all var(--transition-base);
-  font-weight: var(--font-weight-bold);
+  transition: all 0.2s;
+  font-weight: 600;
+  font-size: 0.9rem;
 }
 
 .refreshButton:hover {
-  background: var(--color-primary);
-  border-color: var(--color-primary);
-  color: white;
+  border-color: var(--color-primary, #ed8936);
+  color: var(--color-primary, #ed8936);
+  background-color: #fffaf0;
 }
 
-/* GROUPS LIST */
+/* GRID */
 .groupsGrid {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-md);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: var(--spacing-lg);
 }
 
+/* CARD */
 .groupCard {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: var(--spacing-md) var(--spacing-xl);
-  background: var(--bg-card);
+  gap: 1rem;
+  padding: 1.5rem;
+  background: var(--bg-card, white);
   border: 2px solid transparent;
-  border-radius: var(--radius-full);
-  /* Pill shape rows */
+  border-radius: var(--radius-xl, 16px);
   cursor: pointer;
-  transition: all var(--transition-base);
-  box-shadow: var(--shadow-sm);
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.1));
+  text-align: left;
+  width: 100%;
 }
 
 .groupCard:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--color-primary-light);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md, 0 10px 15px -3px rgba(0, 0, 0, 0.1));
+  border-color: var(--color-gray-200, #e2e8f0);
 }
 
-.groupIcon {
-  width: 50px;
-  height: 50px;
+.groupCard:active {
+  transform: scale(0.98);
+}
+
+/* ICON */
+.iconWrapper {
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
-  background: white;
-  border: 2px solid var(--color-primary);
-  color: var(--color-primary);
+  background: var(--color-primary, #ed8936);
+  color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  box-shadow: 0 4px 6px rgba(237, 137, 54, 0.3);
   flex-shrink: 0;
 }
 
+/* INFO */
 .groupInfo {
   flex: 1;
-  margin-left: var(--spacing-lg);
   display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
+  flex-direction: column;
+  gap: 4px;
 }
 
 .groupName {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-bold);
-  color: var(--text-main);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-main, #2d3748);
   margin: 0;
 }
 
-.groupDescription {
-  font-size: var(--font-size-sm);
-  color: var(--text-muted);
-  margin: 0;
-}
-
-/* Action Button style for "Select" */
-.arrow {
-  background: var(--color-primary);
-  color: white;
-  padding: 0.5rem 2rem;
-  border-radius: var(--radius-full);
-  font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-base);
-  transition: background var(--transition-base);
-  /* The arrow logic in original css might be an icon, but I'll make it look like a button container */
+.caretakerInfo {
+  font-size: 0.9rem;
+  color: var(--text-muted, #718096);
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
+}
+
+/* ARROW */
+.arrow {
+  color: var(--text-muted, #cbd5e0);
+  transition: transform 0.2s;
 }
 
 .groupCard:hover .arrow {
-  background: var(--color-primary-dark);
+  color: var(--color-primary, #ed8936);
+  transform: translateX(4px);
 }
 
+/* LOADING & EMPTY STATES */
 .loading,
 .empty {
-  padding: var(--spacing-3xl);
+  padding: 4rem 2rem;
   text-align: center;
-  color: var(--text-muted);
+  color: var(--text-muted, #718096);
+  background: var(--bg-card, white);
+  border-radius: var(--radius-xl, 16px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
 }
 
 .spinner {
   animation: spin 1s linear infinite;
+  color: var(--color-primary, #ed8936);
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
+.emptyIcon {
+  color: var(--color-gray-300, #cbd5e0);
+  margin-bottom: 0.5rem;
+}
+
+/* ERROR */
 .errorContainer {
-  padding: var(--spacing-xl);
+  padding: 2rem;
   text-align: center;
-}
-
-.error {
-  padding: var(--spacing-md);
-  background: var(--color-primary-light);
-  color: var(--color-primary-dark);
-  border-radius: var(--radius-md);
-  margin-bottom: var(--spacing-md);
+  background: #fff5f5;
+  border: 1px solid #fed7d7;
+  border-radius: var(--radius-lg, 8px);
+  color: #c53030;
 }
 
 .retryButton {
-  padding: 0.5rem 1.5rem;
-  background: var(--color-primary);
+  margin-top: 1rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--color-primary, #ed8936);
   color: white;
   border: none;
-  border-radius: var(--radius-full);
+  border-radius: 9999px;
   cursor: pointer;
-  font-weight: bold;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.retryButton:hover {
+  background: var(--color-primary-dark, #dd6b20);
+}
+
+/* RESPONSYWNOŚĆ */
+@media (max-width: 768px) {
+  .groupsGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .refreshButton {
+    width: 100%;
+    justify-content: center;
+  }
 }

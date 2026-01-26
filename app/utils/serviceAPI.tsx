@@ -49,6 +49,67 @@ class ApiClient {
   }
 
   // ============================================
+  // OBSŁUGA OBRAZÓW (Secure Fetch)
+  // ============================================
+
+  /**
+   * PRYWATNA metoda pomocnicza - "silnik" do pobierania obrazków.
+   * * @param path - nazwa pliku (np. "pizza.jpg")
+   * @param endpointPrefix - prefiks endpointu API (np. "/meals/image" lub "/announcements/image")
+   */
+  private async _fetchSecureImage(path: string | undefined, endpointPrefix: string): Promise<string | null> {
+    if (!path) return null;
+
+    // 1. Jeśli to zewnętrzny link, zwróć go bez zmian
+    if (path.startsWith('http') || path.startsWith('https')) {
+      return path;
+    }
+
+    // 2. Wyczyść ścieżkę (usuń początkowy slash, jeśli jest)
+    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    
+    // 3. Zbuduj pełny endpoint
+    const endpoint = `${endpointPrefix}/${cleanPath}`;
+
+    try {
+      // 4. Pobierz Blob z autoryzacją
+      const blob = await this.download(endpoint);
+
+      // 5. Utwórz URL
+      return URL.createObjectURL(blob);
+    } catch (error) {
+      console.error(`❌ Failed to load image from ${endpoint}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Publiczna metoda dla Ogłoszeń (zrefaktoryzowana)
+   * Endpoint w Springu: @RequestMapping("/announcements") + @GetMapping("/image/{path}")
+   */
+  async getAnnouncementImage(path: string | undefined): Promise<string | null> {
+    return this._fetchSecureImage(path, '/announcements/image');
+  }
+
+  /**
+   * NOWA Metoda (np. dla Posiłków lub innego kontrolera)
+   * Zakładając, że Twój nowy endpoint znajduje się w kontrolerze zmapowanym na "/meals"
+   * Endpoint w Springu: @RequestMapping("/meals") + @GetMapping("/image/{path}")
+   */
+  async getMealImage(path: string | undefined): Promise<string | null> {
+    return this._fetchSecureImage(path, '/meals/image');
+  }
+
+  /**
+   * Zwalnianie pamięci (bez zmian)
+   */
+  revokeImage(url: string | null | undefined): void {
+    if (url && url.startsWith('blob:')) {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  // ============================================
   // ZARZĄDZANIE TOKENEM I KONTEM
   // ============================================
 
@@ -454,6 +515,8 @@ class ApiClient {
       method: 'GET',
     }, 'blob'); // ← Przekazujemy flagę 'blob'
   }
+
+  
   // ============================================
   // AUTENTYKACJA
   // ============================================

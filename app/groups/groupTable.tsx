@@ -1,10 +1,9 @@
-// app/groups/groupTable.tsx
 import React, { useState, useEffect } from 'react';
 import { api } from '../utils/serviceAPI';
-import styles from '../attendence/AttendanceView.module.css'; // Reusing the unified grid styles
+import styles from '../attendence/AttendanceView.module.css'; // Używamy ujednoliconego CSS
 import NewGroupModal from './groupsModal';
 import PreschoolersList from './PreschoolersList';
-import { Users, ChevronRight, Plus, RefreshCw } from "lucide-react";
+import { Users, ChevronRight, Plus, RefreshCw, User } from "lucide-react";
 
 interface Group {
   id: number;
@@ -75,6 +74,9 @@ const GroupsTable = () => {
     return teacher ? `${teacher.firstName} ${teacher.lastName}` : `ID: ${id}`;
   };
 
+  // Układ kolumn: ID | Nazwa | Opiekun | Akcja
+  const gridTemplate = "60px 1fr 1fr 100px";
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -88,28 +90,54 @@ const GroupsTable = () => {
       </div>
 
       {groupsData.length === 0 ? (
-        <div className={styles.empty}>No groups found.</div>
+        <div className={styles.empty}>
+            <Users size={48} style={{ opacity: 0.3, marginBottom: '10px' }} />
+            <span>No groups found.</span>
+        </div>
       ) : (
-        <div className={styles.studentsGrid}>
-          <div className={styles.gridRow} style={{ gridTemplateColumns: '50px 1fr 1fr 100px' }}>
-            <div style={{ justifyContent: 'center' }}>ID</div>
-            <div style={{ justifyContent: 'flex-start' }}>Group Name</div>
-            <div style={{ justifyContent: 'flex-start' }}>Main Caretaker</div>
-            <div>Action</div>
+        <div className={styles.historySection}> {/* Używamy historySection jako kontenera tabeli */}
+          
+          {/* HEADER ROW */}
+          <div className={styles.historyHeaderRow} style={{ display: 'grid', gridTemplateColumns: gridTemplate, padding: '1rem', alignItems: 'center' }}>
+            <div style={{ textAlign: 'center' }}>ID</div>
+            <div style={{ paddingLeft: '10px' }}>Group Name</div>
+            <div>Main Caretaker</div>
+            <div style={{ textAlign: 'center' }}>Action</div>
           </div>
 
+          {/* DATA ROWS */}
           {groupsData.map((group) => (
-            <div key={group.id} className={styles.studentCard} style={{ gridTemplateColumns: '50px 1fr 1fr 100px' }}>
-              <div className={styles.cell} style={{ textAlign: 'center' }}>{group.id}</div>
-              <div className={`${styles.cell} ${styles.cellLeft}`} style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{group.groupName}</div>
-              <div className={`${styles.cell} ${styles.cellLeft}`} style={{ color: 'var(--text-muted)' }}>
-                <Users size={16} style={{ display: 'inline', marginRight: '5px' }} />
+            <div key={group.id} className={styles.historyRow} style={{ display: 'grid', gridTemplateColumns: gridTemplate, padding: '1rem', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
+              
+              {/* ID */}
+              <div className={styles.cell} style={{ justifyContent: 'center', fontWeight: 'bold', color: 'var(--text-muted)' }}>
+                  #{group.id}
+              </div>
+              
+              {/* GROUP NAME */}
+              <div className={styles.cell} style={{ paddingLeft: '10px', fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-main)' }}>
+                  {group.groupName}
+              </div>
+              
+              {/* CARETAKER */}
+              <div className={styles.cell} style={{ color: 'var(--text-muted)' }}>
+                <User size={16} style={{ marginRight: '6px' }} />
                 {getCaretakerName(group.mainCaretakerId)}
               </div>
-              <div className={styles.cell}>
+              
+              {/* ACTION */}
+              <div style={{ textAlign: 'center' }}>
                 <button
-                  className={styles.statusBtn}
-                  style={{ background: 'var(--color-primary)', color: 'white', width: '36px', height: '36px', borderRadius: '50%' }}
+                  className={styles.statusBtn} // Używamy klasy statusBtn dla okrągłego przycisku
+                  style={{ 
+                      background: 'var(--color-primary)', 
+                      color: 'white', 
+                      width: '36px', 
+                      height: '36px', 
+                      borderRadius: '50%',
+                      margin: '0 auto',
+                      border: 'none'
+                  }}
                   onClick={() => setSelectedGroup(group)}
                   title="View Students"
                 >

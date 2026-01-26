@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "~/utils/serviceAPI";
-import { User } from "lucide-react";
+import { User, Users } from "lucide-react"; // Zmieniona ikona
 import styles from "./AttendanceView.module.css";
 import type { Preschooler, AttendanceRecord, Group } from "./attendanceTypes";
 
@@ -18,18 +18,14 @@ export default function ParentAttendanceView() {
   const [loadingChildren, setLoadingChildren] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // Modal state
   const [isExcuseModalOpen, setIsExcuseModalOpen] = useState(false);
 
-  // 1. Fetch Groups & Children on mount
   useEffect(() => {
     const initData = async () => {
       setLoadingChildren(true);
       try {
-        // --- A. Pobranie Grup ---
         try {
             const groupResponse = await api.get<Group[]>("/groups");
-            // Obsługa formatu { data: [] } lub []
             const groupsData = Array.isArray(groupResponse) 
                 ? groupResponse 
                 : (groupResponse as any).data || [];
@@ -39,16 +35,19 @@ export default function ParentAttendanceView() {
             console.warn("Could not fetch groups map", e);
         }
 
-        // --- B. Pobranie Dzieci ---
         const accountInfo = api.getAccountInfo();
         if (accountInfo?.id) {
           const childResponse = await api.get<Preschooler[]>(`/preschoolers/parent/${accountInfo.id}`);
-          
           const childData = Array.isArray(childResponse) 
             ? childResponse 
             : (childResponse as any).data || [];
 
           setChildren(childData);
+          
+          // Opcjonalnie: automatycznie wybierz pierwsze dziecko
+          if (childData.length > 0) {
+              setSelectedChildId(childData[0].id);
+          }
         }
       } catch (error) {
         console.error("Failed to fetch initial data:", error);
@@ -60,29 +59,21 @@ export default function ParentAttendanceView() {
     initData();
   }, []);
 
-  // 2. Fetch History Function
   const fetchHistory = async () => {
     if (!selectedChildId) return;
     
     setLoadingHistory(true);
-    setAttendanceHistory([]); // Wyczyść poprzednie dane przed ładowaniem
+    setAttendanceHistory([]); 
     
     try {
-      console.log(`📥 Pobieranie historii dla dziecka ID: ${selectedChildId}...`);
-      
       const response = await api.get<AttendanceRecord[] | { data: AttendanceRecord[] }>(`/attendance/preschooler/${selectedChildId}`);
       
-      console.log("📦 Odpowiedź API (History):", response);
-
-      // --- FIX: Obsługa różnych formatów odpowiedzi API ---
       let rawData: AttendanceRecord[] = [];
-      
       if (Array.isArray(response)) {
           rawData = response;
       } else if (response && 'data' in response && Array.isArray(response.data)) {
           rawData = response.data;
       } else {
-          console.warn("⚠️ Nieoczekiwany format danych historii:", response);
           rawData = [];
       }
 
@@ -90,11 +81,11 @@ export default function ParentAttendanceView() {
           const sorted = rawData.sort((a, b) => {
               const dateA = a.date ? new Date(a.date).getTime() : 0;
               const dateB = b.date ? new Date(b.date).getTime() : 0;
-              return dateB - dateA; // Od najnowszych
+              return dateB - dateA;
           });
           setAttendanceHistory(sorted);
       } else {
-          setAttendanceHistory([]);
+        setAttendanceHistory([]);
       }
 
     } catch (error) {
@@ -104,7 +95,6 @@ export default function ParentAttendanceView() {
     }
   };
 
-  // Trigger history fetch whenever selectedChildId changes
   useEffect(() => {
     fetchHistory();
   }, [selectedChildId]);
@@ -112,7 +102,16 @@ export default function ParentAttendanceView() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-         <User size={32} color="#4a5568" />
+         <div style={{
+             background: 'var(--color-primary)', 
+             padding: '12px', 
+             borderRadius: '50%', 
+             color: 'white',
+             display: 'flex',
+             boxShadow: 'var(--shadow-orange)'
+         }}>
+            <Users size={28} />
+         </div>
          <h2 className={styles.title}>My Children</h2>
       </div>
 
@@ -136,7 +135,7 @@ export default function ParentAttendanceView() {
         <ExcuseAbsenceModal 
             isOpen={isExcuseModalOpen}
             onClose={() => setIsExcuseModalOpen(false)}
-            onSuccess={() => fetchHistory()} // Odśwież po zapisaniu zwolnienia
+            onSuccess={() => fetchHistory()}
             childId={selectedChildId}
         />
       )}

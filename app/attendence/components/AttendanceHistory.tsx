@@ -11,74 +11,83 @@ interface AttendanceHistoryProps {
 
 export const AttendanceHistory: React.FC<AttendanceHistoryProps> = ({ history, loading, onOpenExcuseModal }) => {
   return (
-    <div style={{ marginTop: 'var(--spacing-2xl)', animation: 'fadeIn 0.3s ease-in' }}>
-      <div className={styles.header} style={{ marginBottom: 'var(--spacing-md)', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <Calendar size={24} color="#4a5568" />
-          <h3 className={styles.title} style={{ fontSize: 'var(--font-size-2xl)', margin: 0 }}>
-            Attendance History
-          </h3>
+    <div className={styles.historySection}>
+      
+      {/* HEADER SECTION */}
+      <div className={styles.historyHeader}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ background: '#ebf8ff', padding: '10px', borderRadius: '50%', color: '#3182ce' }}>
+             <Calendar size={24} />
+          </div>
+          <div>
+             <h3 className={styles.title} style={{ fontSize: '1.5rem', marginBottom: '2px' }}>
+                Attendance History
+             </h3>
+             <span style={{ color: '#718096', fontSize: '0.9rem' }}>Record of arrivals and departures</span>
+          </div>
           {loading && <RefreshCw className={styles.spinner} size={20} />}
         </div>
 
-        <button
-          onClick={onOpenExcuseModal}
-          className={styles.actionBtn}
-          style={{
-            backgroundColor: '#e53e3e', color: 'white', border: 'none',
-            padding: '8px 16px', borderRadius: '6px', fontWeight: 600,
-            display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer'
-          }}
-        >
+        <button onClick={onOpenExcuseModal} className={styles.actionBtn}>
           <CalendarX size={18} />
           Report Absence
         </button>
       </div>
 
+      {/* GRID CONTENT */}
       {history.length === 0 && !loading ? (
-        <div className={styles.empty} style={{ background: '#f8fafc', borderRadius: '8px' }}>
-          No attendance records found for this child.
+        <div className={styles.empty}>
+           <span>No attendance records found for this child.</span>
         </div>
       ) : (
-        <div style={{ overflowX: 'auto' }}>
-          <table className={styles.historyTable}>
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Arrival</th>
-                <th>Departure</th>
-              </tr>
-            </thead>
-            <tbody>
-              {history.map((record) => (
-                <tr key={record.id} className={styles.historyRow}>
-                  <td>
-                    {record.date ? new Date(record.date).toLocaleDateString() : '-'}
-                  </td>
-                  <td>
-                    <span className={`${styles.badge} ${styles['badge' + record.status]}`}>
-                      {record.status}
-                    </span>
-                  </td>
-                  <td style={{ fontFamily: 'monospace', color: '#4a5568' }}>
-                    {record.arrivalTime ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <Clock size={14} color="#a0aec0" /> {record.arrivalTime}
-                      </div>
-                    ) : "-"}
-                  </td>
-                  <td style={{ fontFamily: 'monospace', color: '#4a5568' }}>
-                    {record.departureTime ? (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                        <Clock size={14} color="#a0aec0" /> {record.departureTime}
-                      </div>
-                    ) : "-"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div>
+          {/* TABLE HEADER (GRID) */}
+          <div className={`${styles.historyGridLayout} ${styles.historyHeaderRow}`}>
+            <div>Date</div>
+            <div style={{ textAlign: 'center' }}>Status</div>
+            <div style={{ textAlign: 'center' }}>Arrival</div>
+            <div style={{ textAlign: 'center' }}>Departure</div>
+          </div>
+
+          {/* TABLE ROWS (GRID) */}
+          {history.map((record) => (
+            <div key={record.id} className={`${styles.historyGridLayout} ${styles.historyRow}`}>
+              
+              {/* Date */}
+              <div className={`${styles.cell} ${styles.dateText}`}>
+                <Calendar size={16} color="#a0aec0" />
+                {record.date ? new Date(record.date).toLocaleDateString() : '-'}
+              </div>
+              
+              {/* Status Badge */}
+              <div style={{ textAlign: 'center' }}>
+                <span className={`${styles.statusBadge} ${styles['status' + record.status]}`}>
+                  {record.status}
+                </span>
+              </div>
+              
+              {/* Arrival Time */}
+              <div className={`${styles.cell} ${styles.mono}`} style={{ justifyContent: 'center' }}>
+                {record.arrivalTime ? (
+                    <>
+                        <Clock size={14} color="#cbd5e0" style={{marginRight: '4px'}}/>
+                        {record.arrivalTime}
+                    </>
+                ) : "-"}
+              </div>
+              
+              {/* Departure Time */}
+              <div className={`${styles.cell} ${styles.mono}`} style={{ justifyContent: 'center' }}>
+                 {record.departureTime ? (
+                    <>
+                        <Clock size={14} color="#cbd5e0" style={{marginRight: '4px'}}/>
+                        {record.departureTime}
+                    </>
+                ) : "-"}
+              </div>
+
+            </div>
+          ))}
         </div>
       )}
     </div>

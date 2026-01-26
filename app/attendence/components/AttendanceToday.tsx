@@ -1,8 +1,7 @@
-// app/routes/attendance/components/AttendanceToday.tsx
 import { useState, useEffect } from "react";
 import { api } from "~/utils/serviceAPI";
-import { ArrowLeft, Clock, RefreshCw, Save, Calendar } from "lucide-react";
-import styles from "../AttendanceView.module.css";
+import { ArrowLeft, Clock, RefreshCw, Save, Calendar, Check, X, Clock as ClockIcon, FileText } from "lucide-react";
+import styles from "../AttendanceView.module.css"; // Używamy tego samego pliku CSS
 import type { AttendanceRecord, Preschooler, Group } from "../attendanceTypes";
 
 interface Props {
@@ -76,29 +75,20 @@ export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Pro
     loadData();
   }, [groupId, today]);
 
-  const updateAttendance = (preschoolerId: number, field: keyof AttendanceRecord, value: any) => {
+  const setStatus = (preschoolerId: number, status: AttendanceRecord["status"]) => {
     setAttendance(prev => {
       const newMap = new Map(prev);
       const record = newMap.get(preschoolerId);
-      if (record) newMap.set(preschoolerId, { ...record, [field]: value });
+      if (record) {
+          const updates: any = { status };
+          // Auto-fill arrival time if switching to Present/Late and it's empty
+          if ((status === "PRESENT" || status === "LATE") && !record.arrivalTime) {
+              updates.arrivalTime = new Date().toTimeString().split(' ')[0].substring(0, 5);
+          }
+          newMap.set(preschoolerId, { ...record, ...updates });
+      }
       return newMap;
     });
-  };
-
-  const setStatus = (preschoolerId: number, status: AttendanceRecord["status"]) => {
-    updateAttendance(preschoolerId, "status", status);
-    if (status === "PRESENT" || status === "LATE") {
-      const record = attendance.get(preschoolerId);
-      if (!record?.arrivalTime) {
-        updateAttendance(preschoolerId, "arrivalTime", new Date().toTimeString().split(' ')[0].substring(0, 5));
-      }
-    }
-  };
-
-  const formatTimeForBackend = (time: string | undefined | null): string | null => {
-    if (!time) return null;
-    if (time.length === 5) return `${time}:00`;
-    return time;
   };
 
   const handleSaveAll = async () => {
@@ -108,24 +98,30 @@ export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Pro
     try {
       const accountInfo = api.getAccountInfo();
       const attendanceData = Array.from(attendance.values());
+      
       await Promise.all(attendanceData.map(async (record) => {
         const payload = {
           id: record.id,
           date: today,
           status: record.status,
-          arrivalTime: formatTimeForBackend(record.arrivalTime),
-          departureTime: formatTimeForBackend(record.departureTime),
+          arrivalTime: record.arrivalTime ? (record.arrivalTime.length === 5 ? `${record.arrivalTime}:00` : record.arrivalTime) : null,
+          departureTime: record.departureTime ? (record.departureTime.length === 5 ? `${record.departureTime}:00` : record.departureTime) : null,
           preschoolerId: Number(record.preschoolerId),
           recordedById: Number(accountInfo?.id)
         };
+        
         if (record.id) {
           await api.put(`/attendance/${record.id}`, payload);
         } else {
           await api.post("/attendance", payload);
         }
       }));
+      
       setSuccess(true);
-      setTimeout(() => onBack(), 1500);
+      setTimeout(() => {
+          setSuccess(false);
+          // Opcjonalnie: onBack(); 
+      }, 2000);
     } catch (err: any) {
       console.error("Error saving attendance:", err);
       setError("Failed to save some records. Please check connection.");
@@ -152,51 +148,78 @@ export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Pro
 
         <div className={styles.headerInfo}>
           <h1 className={styles.title}>{group?.groupName || `Group ${groupId}`}</h1>
-          <p className={styles.date}><Clock size={16} style={{ display: 'inline', marginBottom: '-2px' }} /> {today}</p>
+          <p className={styles.date}>
+              <Clock size={16} style={{ display: 'inline', marginBottom: '-2px', marginRight: '6px' }} /> 
+              {today}
+          </p>
         </div>
       </div>
 
       {error && <div className={styles.errorBanner}>{error}</div>}
-      {success && <div className={styles.successBanner}>Saved successfully!</div>}
+      {success && <div className={styles.successBanner}>Attendance saved successfully!</div>}
 
-      <div className={styles.studentsGrid}>
-        {/* Header Row */}
-        <div className={styles.gridRow}>
+      <div className={styles.historySection}> {/* Używamy kontenera 'historySection' dla spójności */}
+        
+        {/* --- GRID HEADER --- */}
+        {/* Kolumny: No | Name | Last Name | Status Buttons (4 columns) */}
+        <div className={`${styles.teacherGridLayout} ${styles.historyHeaderRow}`}>
           <div>No.</div>
           <div>First Name</div>
           <div>Last Name</div>
-          <div>Index</div>
-          <div>Present</div>
-          <div>Late</div>
-          <div>Absent</div>
-          <div>Excused</div>
+          <div style={{textAlign: 'center'}}>Present</div>
+          <div style={{textAlign: 'center'}}>Late</div>
+          <div style={{textAlign: 'center'}}>Absent</div>
+          <div style={{textAlign: 'center'}}>Excused</div>
         </div>
 
-        {/* Student Rows */}
+        {/* --- ROWS --- */}
         {preschoolers.map((child, index) => {
           const record = attendance.get(child.id);
           if (!record) return null;
 
           return (
-            <div key={child.id} className={styles.studentCard}>
+            <div key={child.id} className={`${styles.teacherGridLayout} ${styles.historyRow}`}>
               <div className={styles.cell}>{index + 1}.</div>
-              <div className={`${styles.cell} ${styles.cellLeft}`}>{child.firstName}</div>
-              <div className={`${styles.cell} ${styles.cellLeft}`}>{child.lastName}</div>
-              <div className={styles.cell}>{child.id}</div> {/* Assuming ID is index no for now, or add index field */}
+              <div className={styles.cell} style={{fontWeight: 600}}>{child.firstName}</div>
+              <div className={styles.cell} style={{fontWeight: 600}}>{child.lastName}</div>
 
               {/* Status Buttons */}
-              {(["PRESENT", "LATE", "ABSENT", "EXCUSED"] as const).map(s => (
-                <div key={s} style={{ display: 'flex', justifyContent: 'center' }}>
-                  <button
-                    onClick={() => setStatus(child.id, s)}
-                    className={`${styles.statusBtn} ${styles['status' + (s.charAt(0) + s.slice(1).toLowerCase())]} ${record.status === s ? styles.active : ""}`}
-                    disabled={saving}
-                    title={s}
+              <div style={{display:'flex', justifyContent:'center'}}>
+                  <button 
+                    onClick={() => setStatus(child.id, "PRESENT")}
+                    className={`${styles.statusBtn} ${styles.btnPresent} ${record.status === "PRESENT" ? styles.active : ''}`}
+                    title="Present"
                   >
-                    {/* Content handled by CSS (checkmark) */}
+                    <Check size={16} />
                   </button>
-                </div>
-              ))}
+              </div>
+              <div style={{display:'flex', justifyContent:'center'}}>
+                  <button 
+                    onClick={() => setStatus(child.id, "LATE")}
+                    className={`${styles.statusBtn} ${styles.btnLate} ${record.status === "LATE" ? styles.active : ''}`}
+                    title="Late"
+                  >
+                    <ClockIcon size={16} />
+                  </button>
+              </div>
+              <div style={{display:'flex', justifyContent:'center'}}>
+                  <button 
+                    onClick={() => setStatus(child.id, "ABSENT")}
+                    className={`${styles.statusBtn} ${styles.btnAbsent} ${record.status === "ABSENT" ? styles.active : ''}`}
+                    title="Absent"
+                  >
+                    <X size={16} />
+                  </button>
+              </div>
+              <div style={{display:'flex', justifyContent:'center'}}>
+                  <button 
+                    onClick={() => setStatus(child.id, "EXCUSED")}
+                    className={`${styles.statusBtn} ${styles.btnExcused} ${record.status === "EXCUSED" ? styles.active : ''}`}
+                    title="Excused"
+                  >
+                    <FileText size={16} />
+                  </button>
+              </div>
             </div>
           );
         })}
@@ -204,7 +227,8 @@ export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Pro
 
       <div className={styles.footer}>
         <button onClick={handleSaveAll} disabled={saving} className={styles.saveButton}>
-          <Save size={18} /> {saving ? "Saving..." : "Save Attendance"}
+          {saving ? <RefreshCw size={18} className={styles.spinner}/> : <Save size={18} />} 
+          {saving ? " Saving..." : " Save Attendance"}
         </button>
       </div>
     </div>

@@ -1,7 +1,6 @@
-// app/routes/attendance/components/HistoryDetailsTable.tsx
 import { useState, useEffect } from "react";
 import { api } from "~/utils/serviceAPI";
-import { ArrowLeft, RefreshCw, Clock } from "lucide-react";
+import { ArrowLeft, RefreshCw, Clock, User, Calendar } from "lucide-react";
 import styles from "../AttendanceView.module.css";
 import type { AttendanceRecord, Preschooler } from "../attendanceTypes";
 
@@ -50,6 +49,9 @@ export default function HistoryDetailsTable({ groupId, date, records, onBack }: 
 
   if (loading) return <div className={styles.loading}><RefreshCw className={styles.spinner} /> Loading details...</div>;
 
+  // Układ kolumn: Imię | Nazwisko | Status | Wejście | Wyjście
+  const gridTemplate = "1fr 1fr 120px 100px 100px";
+
   return (
     <div className={styles.container}>
       <div className={styles.header}>
@@ -58,50 +60,55 @@ export default function HistoryDetailsTable({ groupId, date, records, onBack }: 
         </button>
         <div className={styles.headerInfo}>
           <h1 className={styles.title}>History: {date}</h1>
-          <p className={styles.date}><Clock size={16} /> Viewing past attendance record</p>
+          <p className={styles.date}>
+              <Clock size={16} style={{ display: 'inline', marginBottom: '-2px', marginRight: '6px' }} /> 
+              Viewing past attendance record
+          </p>
         </div>
       </div>
 
-      <div className={styles.studentsGrid}>
-        {/* Header Row */}
-        <div className={styles.gridRow} style={{ gridTemplateColumns: '1fr 1fr 150px 100px 100px' }}>
-          <div style={{ justifyContent: 'flex-start', paddingLeft: '20px' }}>First Name</div>
-          <div style={{ justifyContent: 'flex-start' }}>Last Name</div>
-          <div>Status</div>
-          <div>Arrival</div>
-          <div>Departure</div>
+      <div className={styles.historySection}>
+        
+        {/* HEADER ROW */}
+        <div className={styles.historyHeaderRow} style={{ display: 'grid', gridTemplateColumns: gridTemplate, padding: '1rem', alignItems: 'center' }}>
+          <div style={{ paddingLeft: '20px' }}>First Name</div>
+          <div>Last Name</div>
+          <div style={{ textAlign: 'center' }}>Status</div>
+          <div style={{ textAlign: 'center' }}>Arrival</div>
+          <div style={{ textAlign: 'center' }}>Departure</div>
         </div>
 
+        {/* DATA ROWS */}
         {displayRecords.map((rec) => (
-          <div key={rec.id} className={styles.studentCard} style={{ gridTemplateColumns: '1fr 1fr 150px 100px 100px' }}>
-            <div className={`${styles.cell} ${styles.cellLeft}`} style={{ paddingLeft: '20px' }}>{rec.firstName}</div>
-            <div className={`${styles.cell} ${styles.cellLeft}`}>{rec.lastName}</div>
-            <div className={styles.cell}>
-              <span
-                style={{
-                  padding: '4px 12px',
-                  borderRadius: '20px',
-                  fontSize: '0.8rem',
-                  fontWeight: 'bold',
-                  background:
-                    rec.status === 'PRESENT' ? 'var(--color-accent-green)' :
-                      rec.status === 'ABSENT' ? 'var(--color-accent-red)' :
-                        rec.status === 'LATE' ? 'var(--color-primary)' :
-                          'var(--color-accent-blue)',
-                  color: 'white'
-                }}
-              >
+          <div key={rec.id} className={styles.historyRow} style={{ display: 'grid', gridTemplateColumns: gridTemplate, padding: '1rem', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
+            
+            <div className={styles.cell} style={{ paddingLeft: '20px', fontWeight: 600 }}>
+                {rec.firstName}
+            </div>
+            
+            <div className={styles.cell} style={{ fontWeight: 600 }}>
+                {rec.lastName}
+            </div>
+            
+            <div style={{ textAlign: 'center' }}>
+              <span className={`${styles.statusBadge} ${styles['status' + rec.status]}`}>
                 {rec.status}
               </span>
             </div>
-            <div className={styles.cell}>{rec.arrivalTime ? rec.arrivalTime.substring(0, 5) : "-"}</div>
-            <div className={styles.cell}>{rec.departureTime ? rec.departureTime.substring(0, 5) : "-"}</div>
+            
+            <div className={`${styles.cell} ${styles.fontMono}`} style={{ justifyContent: 'center' }}>
+                {rec.arrivalTime ? rec.arrivalTime.substring(0, 5) : "-"}
+            </div>
+            
+            <div className={`${styles.cell} ${styles.fontMono}`} style={{ justifyContent: 'center' }}>
+                {rec.departureTime ? rec.departureTime.substring(0, 5) : "-"}
+            </div>
           </div>
         ))}
 
         {displayRecords.length === 0 && (
-          <div className={styles.empty}>
-            No records found for this date.
+          <div className={styles.empty} style={{ padding: '2rem' }}>
+            <span>No records found for this date.</span>
           </div>
         )}
       </div>
