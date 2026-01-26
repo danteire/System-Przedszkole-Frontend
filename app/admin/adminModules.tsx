@@ -1,5 +1,5 @@
-// app/routes/adminPanel/adminModules.tsx
-import { Plus, Eye, Users, Baby, School, UserCheck } from "lucide-react";
+import React from "react";
+import { Plus, Eye, Users, Baby, School } from "lucide-react";
 import styles from "./adminModules.module.css";
 
 interface ModulesProps {
@@ -10,27 +10,26 @@ interface ModulesProps {
 interface ModuleButton {
   label: string;
   action: string;
-  icon: any;
+  icon: React.ElementType; // Poprawione typowanie dla ikon Lucide
   color: string;
 }
 
 export default function AdminModules({ onAction, activeAction }: ModulesProps) {
+  
   const addModules: ModuleButton[] = [
-    // { label: "Add Teacher", action: "add-teacher", icon: UserCheck, color: "primary" },
     { label: "Add Account", action: "add-account", icon: Users, color: "primary" },
     { label: "Add Preschooler", action: "add-preschooler", icon: Baby, color: "info" },
     { label: "Add Group", action: "add-group", icon: School, color: "warning" },
   ];
 
   const viewModules: ModuleButton[] = [
-    // { label: "View Teachers", action: "view-teachers", icon: UserCheck, color: "outline-primary" },
-    { label: "View Account", action: "view-account", icon: Users, color: "outline-success" },
+    { label: "View Accounts", action: "view-account", icon: Users, color: "outline-success" },
     { label: "View Preschoolers", action: "view-preschoolers", icon: Baby, color: "outline-info" },
     { label: "View Groups", action: "view-groups", icon: School, color: "outline-warning" },
   ];
 
   const handleClick = (button: ModuleButton) => {
-    // Jeśli kliknięto ten sam przycisk, wyłącz akcję
+    // Jeśli kliknięto ten sam przycisk, wyłącz akcję (toggle off)
     if (activeAction === button.action) {
       onAction("");
     } else {
@@ -40,10 +39,11 @@ export default function AdminModules({ onAction, activeAction }: ModulesProps) {
 
   return (
     <div className={styles.modulesWrapper}>
-      {/* Sekcja dodawania */}
+      
+      {/* --- SEKCJA DODAWANIA (Pomarańczowa) --- */}
       <div className={styles.section}>
         <div className={styles.sectionHeader}>
-          <Plus className={styles.sectionIcon} size={24} />
+          <Plus className={styles.sectionIcon} size={28} />
           <h2 className={styles.sectionTitle}>Create New</h2>
         </div>
         
@@ -56,8 +56,11 @@ export default function AdminModules({ onAction, activeAction }: ModulesProps) {
               <button
                 key={button.action}
                 onClick={() => handleClick(button)}
+                // Dodajemy klasę 'active' warunkowo
                 className={`${styles.moduleCard} ${isActive ? styles.active : ''}`}
+                // Przekazujemy kolor do CSS via data-attribute
                 data-color={button.color}
+                type="button"
               >
                 <div className={styles.iconWrapper}>
                   <Icon size={32} />
@@ -69,10 +72,10 @@ export default function AdminModules({ onAction, activeAction }: ModulesProps) {
         </div>
       </div>
 
-      {/* Sekcja przeglądania */}
+      {/* --- SEKCJA PRZEGLĄDANIA (Biała) --- */}
       <div className={styles.section}>
         <div className={styles.sectionHeader}>
-          <Eye className={styles.sectionIcon} size={24} />
+          <Eye className={styles.sectionIcon} size={28} />
           <h2 className={styles.sectionTitle}>View & Manage</h2>
         </div>
         
@@ -85,8 +88,10 @@ export default function AdminModules({ onAction, activeAction }: ModulesProps) {
               <button
                 key={button.action}
                 onClick={() => handleClick(button)}
-                className={`${styles.moduleCard} ${styles.viewCard} ${isActive ? styles.active : ''}`}
+                // CSS obsłuży wygląd tej sekcji dzięki selektorowi :nth-of-type(2)
+                className={`${styles.moduleCard} ${isActive ? styles.active : ''}`}
                 data-color={button.color}
+                type="button"
               >
                 <div className={styles.iconWrapper}>
                   <Icon size={32} />

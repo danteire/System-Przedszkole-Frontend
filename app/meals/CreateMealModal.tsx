@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { MealType } from "./mealTypes";
 import styles from "./MealsPage.module.css";
+import { X, Upload, Coffee, Sun, Moon, Utensils } from "lucide-react";
 
 interface CreateMealModalProps {
   isOpen: boolean;
   onClose: () => void;
-onSave: (name: string, type: MealType, info: string, file: File | null, assignDate: string) => Promise<void>;
+  onSave: (name: string, type: MealType, info: string, file: File | null, assignDate: string) => Promise<void>;
 }
 
 export const CreateMealModal: React.FC<CreateMealModalProps> = ({ isOpen, onClose, onSave }) => {
@@ -31,91 +32,113 @@ export const CreateMealModal: React.FC<CreateMealModalProps> = ({ isOpen, onClos
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name) return;
-    
+
     setSaving(true);
     try {
       await onSave(name, type, info, file, assignDate);
       onClose();
     } catch (error) {
-      alert("Nie udało się utworzyć posiłku.");
+      alert("Failed to create meal.");
     } finally {
       setSaving(false);
     }
   };
 
+  const mealTypes = [
+    { value: MealType.BREAKFAST, label: 'Breakfast', icon: <Sun size={18} /> },
+    { value: MealType.LUNCH, label: 'Lunch', icon: <Utensils size={18} /> },
+    { value: MealType.SNACK, label: 'Snack', icon: <Coffee size={18} /> },
+    { value: MealType.DINNER, label: 'Dinner', icon: <Moon size={18} /> }
+  ];
+
   return (
-    <div className={styles.modalOverlay}>
-      <div className={styles.modalCard}>
+    <div className={styles.modalOverlay} onClick={onClose}>
+      <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+        
+        {/* HEADER */}
         <div className={styles.modalHeader}>
-           <h2 className={styles.modalTitle}>Dodaj nowy posiłek do bazy</h2>
+          <h2 className={styles.modalTitle}>Add New Meal</h2>
+          <button onClick={onClose} className={styles.closeButton}>
+            <X size={24} />
+          </button>
         </div>
-        <form onSubmit={handleSubmit}>
-           <div className={styles.formGroup}>
-             <label className={styles.label}>Nazwa posiłku</label>
-             <input 
-               type="text" 
-               className={styles.select}
-               value={name}
-               onChange={e => setName(e.target.value)}
-               placeholder="np. Owsianka z owocami"
-               required
-             />
-           </div>
 
-           <div className={styles.formGroup}>
-             <label className={styles.label}>Typ posiłku</label>
-             <select 
-               className={styles.select}
-               value={type}
-               onChange={e => setType(e.target.value as MealType)}
-             >
-               <option value={MealType.BREAKFAST}>Śniadanie</option>
-               <option value={MealType.LUNCH}>Obiad</option>
-               <option value={MealType.SNACK}>Podwieczorek</option>
-               <option value={MealType.DINNER}>Kolacja</option>
-             </select>
-           </div>
+        <form onSubmit={handleSubmit} className={styles.modalForm}>
+          
+          {/* NAME */}
+          <div className={styles.formGroup}>
+            <label className={styles.detailLabel}>Meal Name</label>
+            <input
+              type="text"
+              className={styles.formInput}
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="e.g. Porridge with fruits"
+              required
+            />
+          </div>
 
-           <div className={styles.formGroup}>
-             <label className={styles.label}>Informacje (alergeny, kcal)</label>
-             <input 
-               type="text" 
-               className={styles.select}
-               value={info}
-               onChange={e => setInfo(e.target.value)}
-               placeholder="np. Zawiera gluten, mleko"
-             />
-           </div>
-           
-            <div className={styles.formGroup} style={{ borderTop: '1px solid #e2e8f0', paddingTop: '15px', marginTop: '15px' }}>
-             <label className={styles.label}>Przypisz od razu do dnia (opcjonalne)</label>
-             <input 
-               type="date" 
-               className={styles.select}
-               value={assignDate}
-               onChange={e => setAssignDate(e.target.value)}
-             />
-             <p style={{fontSize: '0.8rem', color: '#718096', marginTop: '5px'}}>
-                Jeśli wybierzesz datę, posiłek zostanie automatycznie dodany do planu jako {type === 'BREAKFAST' ? 'śniadanie' : type === 'LUNCH' ? 'obiad' : type === 'SNACK' ? 'podwieczorek' : 'kolacja'}.
-             </p>
-           </div>
+          {/* TYPE SELECTOR */}
+          <div className={styles.formGroup}>
+            <label className={styles.detailLabel}>Meal Type</label>
+            <div className={styles.typeGrid}>
+              {mealTypes.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setType(opt.value)}
+                  className={`${styles.typeOption} ${type === opt.value ? styles.active : ''}`}
+                >
+                  {opt.icon} {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
 
-           <div className={styles.formGroup}>
-             <label className={styles.label}>Zdjęcie (opcjonalne)</label>
-             <input 
-               type="file" 
-               className={styles.fileInput}
-               accept="image/*"
-               onChange={e => setFile(e.target.files ? e.target.files[0] : null)}
-             />
-           </div>
-           
-           <div className={styles.modalActions}>
-              <button type="button" onClick={onClose} className={styles.cancelButton} disabled={saving}>Anuluj</button>
-              <button type="submit" className={styles.submitButton} disabled={saving}>
-                  {saving ? "Tworzenie..." : "Utwórz posiłek"}
-              </button>
-           </div>
+          {/* INFO */}
+          <div className={styles.formGroup}>
+            <label className={styles.detailLabel}>Additional Info</label>
+            <textarea
+              className={styles.formTextarea}
+              value={info}
+              onChange={e => setInfo(e.target.value)}
+              placeholder="Allergens, calories, notes..."
+            />
+          </div>
+
+          {/* DATE ASSIGNMENT */}
+          <div className={styles.formGroup} style={{ borderTop: '1px solid #eee', paddingTop: '1.5rem', marginTop: '0.5rem' }}>
+            <label className={styles.detailLabel}>Assign to date (optional)</label>
+            <input
+              type="date"
+              className={styles.formInput}
+              value={assignDate}
+              onChange={e => setAssignDate(e.target.value)}
+            />
+          </div>
+
+          {/* PHOTO UPLOAD */}
+          <div className={styles.formGroup}>
+            <label className={styles.detailLabel}>Photo</label>
+            <div className={styles.uploadArea}>
+              <Upload size={24} className={styles.uploadIcon} />
+              <p>Click to select photo</p>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={e => setFile(e.target.files ? e.target.files[0] : null)}
+              />
+              {file && <span className={styles.fileName}>{file.name}</span>}
+            </div>
+          </div>
+
+          {/* ACTIONS */}
+          <div className={styles.modalActions}>
+            <button type="button" onClick={onClose} className={styles.cancelButton} disabled={saving}>Cancel</button>
+            <button type="submit" className={styles.submitButton} disabled={saving}>
+              {saving ? "Saving..." : "Create Meal"}
+            </button>
+          </div>
         </form>
       </div>
     </div>

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from 'react-bootstrap';
 import { api } from '../utils/serviceAPI';
-import styles from '../commons/PaginatedTable.module.css';
+import styles from '../attendence/AttendanceView.module.css'; // Używamy ujednoliconego CSS
 import NewGroupModal from './groupsModal';
 import PreschoolersList from './PreschoolersList';
+import { Users, ChevronRight, Plus, RefreshCw, User } from "lucide-react";
 
 interface Group {
   id: number;
@@ -23,30 +23,22 @@ const GroupsTable = () => {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
-  
-  // Stan wybranej grupy do drill-down
   const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
-
-  const itemsPerPage = 5;
 
   const fetchData = async () => {
     setLoading(true);
     setError(null);
-
     try {
       const [groupsRes, teachersRes] = await Promise.all([
         api.get<Group[]>("/groups"),
         api.get<Teacher[]>("/accounts/teachers")
       ]);
-
       setGroupsData(Array.isArray(groupsRes) ? groupsRes : []);
       setTeachers(Array.isArray(teachersRes) ? teachersRes : []);
-      
     } catch (err: any) {
       console.error(err);
-      setError('Nie udało się załadować danych.');
+      setError('Failed to load groups.');
     } finally {
       setLoading(false);
     }
@@ -58,121 +50,103 @@ const GroupsTable = () => {
 
   if (selectedGroup) {
     return (
-      <PreschoolersList 
-        groupId={selectedGroup.id} 
+      <PreschoolersList
+        groupId={selectedGroup.id}
         groupName={selectedGroup.groupName}
-        onBack={() => setSelectedGroup(null)} 
+        onBack={() => setSelectedGroup(null)}
       />
     );
   }
 
-  
-  if (loading) {
-    return (
-      <div className={styles.wrapper}>
-        <div style={{ height: "80px", display: "flex", justifyContent: "center", alignItems: "center" }}>
-          Ładowanie danych...
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <div className={styles.loading}><RefreshCw className={styles.spinner} /> Loading groups...</div>;
 
   if (error) {
     return (
-      <div className={styles.wrapper}>
-        <div style={{ textAlign: "center", color: "red" }}>
-          ❌ Błąd: {error}
-          <br/>
-          <button onClick={() => window.location.reload()} className={styles.button} style={{marginTop: '10px'}}>
-            Spróbuj ponownie
-          </button>
-        </div>
+      <div className={styles.errorBanner} style={{ margin: '20px' }}>
+        {error}
+        <button onClick={fetchData} className={styles.retryButton} style={{ marginLeft: '10px' }}>Retry</button>
       </div>
     );
   }
-
-  const totalPages = Math.ceil(groupsData.length / itemsPerPage);
-  if (currentPage > totalPages && totalPages > 0) {
-    setCurrentPage(totalPages);
-  }
-  const indexOfLastItem = currentPage * itemsPerPage;
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const currentItems = groupsData.slice(indexOfFirstItem, indexOfLastItem);
-  
-  const occupiedCaretakerIds = groupsData.map(group => group.mainCaretakerId);
 
   const getCaretakerName = (id: number) => {
     const teacher = teachers.find(t => t.id === id);
     return teacher ? `${teacher.firstName} ${teacher.lastName}` : `ID: ${id}`;
   };
 
+  // Układ kolumn: ID | Nazwa | Opiekun | Akcja
+  const gridTemplate = "60px 1fr 1fr 100px";
+
   return (
-    <div className={styles.wrapper}>
+    <div className={styles.container}>
       <div className={styles.header}>
-        <h2 className={styles.title}>Lista Grup</h2>
-        <Button className={styles.newGroupButton} variant="success" onClick={() => setShowModal(true)}>
-          + Nowa Grupa
-        </Button>
+        <div className={styles.headerInfo}>
+          <h1 className={styles.title}>All Groups</h1>
+          <p className={styles.date}>Manage preschool groups and students</p>
+        </div>
+        <button className={styles.saveButton} onClick={() => setShowModal(true)}>
+          <Plus size={18} /> New Group
+        </button>
       </div>
-      
+
       {groupsData.length === 0 ? (
-         <div style={{ padding: "20px", textAlign: "center" }}>Brak danych do wyświetlenia</div>
+        <div className={styles.empty}>
+            <Users size={48} style={{ opacity: 0.3, marginBottom: '10px' }} />
+            <span>No groups found.</span>
+        </div>
       ) : (
-        <>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th className={styles.th}>ID</th>
-                <th className={styles.th}>Nazwa Grupy</th>
-                <th className={styles.th}>Główny Opiekun</th>
-                <th className={styles.th} style={{ textAlign: 'center' }}>Akcje</th>
-              </tr>
-            </thead>
-            <tbody>
-              {currentItems.map((group) => (
-                <tr key={group.id}>
-                  <td className={styles.td}>{group.id}</td>
-                  <td className={styles.td}>{group.groupName}</td>
-                  <td className={styles.td}>
-                    <strong>{getCaretakerName(group.mainCaretakerId)}</strong>
-                  </td>
-                  <td className={styles.td} style={{ textAlign: 'center' }}>
-                    
-                    <Button 
-                      variant="outline-primary" 
-                      size="sm"
-                      onClick={() => setSelectedGroup(group)}
-                      title="Pokaż listę dzieci w tej grupie"
-                    >
-                      👥 Zobacz Listę
-                    </Button>
-
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className={styles.pagination}>
-            <button
-              className={styles.pageButton}
-              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-            >
-              Poprzednia
-            </button>
-            <span className={styles.pageInfo}>
-              Strona {currentPage} z {totalPages}
-            </span>
-            <button
-              className={styles.pageButton}
-              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-            >
-              Następna
-            </button>
+        <div className={styles.historySection}> {/* Używamy historySection jako kontenera tabeli */}
+          
+          {/* HEADER ROW */}
+          <div className={styles.historyHeaderRow} style={{ display: 'grid', gridTemplateColumns: gridTemplate, padding: '1rem', alignItems: 'center' }}>
+            <div style={{ textAlign: 'center' }}>ID</div>
+            <div style={{ paddingLeft: '10px' }}>Group Name</div>
+            <div>Main Caretaker</div>
+            <div style={{ textAlign: 'center' }}>Action</div>
           </div>
-        </>
+
+          {/* DATA ROWS */}
+          {groupsData.map((group) => (
+            <div key={group.id} className={styles.historyRow} style={{ display: 'grid', gridTemplateColumns: gridTemplate, padding: '1rem', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}>
+              
+              {/* ID */}
+              <div className={styles.cell} style={{ justifyContent: 'center', fontWeight: 'bold', color: 'var(--text-muted)' }}>
+                  #{group.id}
+              </div>
+              
+              {/* GROUP NAME */}
+              <div className={styles.cell} style={{ paddingLeft: '10px', fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-main)' }}>
+                  {group.groupName}
+              </div>
+              
+              {/* CARETAKER */}
+              <div className={styles.cell} style={{ color: 'var(--text-muted)' }}>
+                <User size={16} style={{ marginRight: '6px' }} />
+                {getCaretakerName(group.mainCaretakerId)}
+              </div>
+              
+              {/* ACTION */}
+              <div style={{ textAlign: 'center' }}>
+                <button
+                  className={styles.statusBtn} // Używamy klasy statusBtn dla okrągłego przycisku
+                  style={{ 
+                      background: 'var(--color-primary)', 
+                      color: 'white', 
+                      width: '36px', 
+                      height: '36px', 
+                      borderRadius: '50%',
+                      margin: '0 auto',
+                      border: 'none'
+                  }}
+                  onClick={() => setSelectedGroup(group)}
+                  title="View Students"
+                >
+                  <ChevronRight size={20} />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
       <NewGroupModal
@@ -181,7 +155,7 @@ const GroupsTable = () => {
           setShowModal(false);
           fetchData();
         }}
-        occupiedIds={occupiedCaretakerIds}
+        occupiedIds={groupsData.map(group => group.mainCaretakerId)}
       />
     </div>
   );

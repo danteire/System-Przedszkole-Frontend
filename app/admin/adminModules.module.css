@@ -1,16 +1,86 @@
 /* app/routes/adminPanel/adminModules.module.css */
-.modulesWrapper {
-  max-width: 1200px;
-  margin: var(--spacing-3xl) auto;
-  padding: 0 var(--spacing-xl);
+
+/* ========================================= */
+/* 0. BAZA DLA KONTENERÓW (Fundament)        */
+/* ========================================= */
+
+.pageContainer {
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--bg-body, #f8fafc);
+  /* Tło całej strony */
+  padding-top: var(--spacing-lg);
 }
 
-.section {
-  background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
-  border-radius: var(--radius-2xl);
-  padding: var(--spacing-2xl);
+/* To jest kluczowa klasa - używamy jej w adminPanel.tsx dla Dashboardu,
+   a tutaj dziedziczą z niej modulesWrapper i contentWrapper.
+   Gwarantuje to, że Dashboard, Kafelki i Formularze mają tę samą szerokość.
+*/
+.commonWrapper,
+.modulesWrapper,
+.contentWrapper {
+  width: 100%;
+  max-width: 1400px;
+  /* Ujednolicona szerokość */
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--spacing-lg);
+  padding-right: var(--spacing-lg);
+  box-sizing: border-box;
+}
+
+/* Specyficzne odstępy dla Dashboardu */
+.commonWrapper {
   margin-bottom: var(--spacing-xl);
-  box-shadow: 0 10px 40px rgba(45, 55, 72, 0.4);
+}
+
+/* Kontener grupujący moduły i content (opcjonalny, ale przydatny strukturalnie) */
+.adminPanelContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+  /* Odstęp między kafelkami a formularzem */
+  padding-bottom: var(--spacing-2xl);
+}
+
+/* ========================================= */
+/* 1. GÓRNA SEKCJA - KAFELKI (Modules)       */
+/* ========================================= */
+
+/* .modulesWrapper dziedziczy style z .commonWrapper powyżej */
+.modulesWrapper {
+  /* Dodajemy flex column dla wewnętrznego układu sekcji */
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+/* ... RESZTA PLIKU CSS BEZ ZMIAN (sekcje .section, .moduleGrid, .contentCard itd.) ... */
+/* Poniżej wklejam resztę dla pewności, że masz kompletny plik: */
+
+/* --- CREATE SECTION (Orange) --- */
+.section {
+  width: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
+  box-shadow: var(--shadow-orange);
+  color: white;
+  position: relative;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.section::before {
+  content: '';
+  position: absolute;
+  top: -50px;
+  right: -50px;
+  width: 250px;
+  height: 250px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  pointer-events: none;
 }
 
 .sectionHeader {
@@ -18,168 +88,247 @@
   align-items: center;
   gap: var(--spacing-md);
   margin-bottom: var(--spacing-xl);
+  position: relative;
+  z-index: 1;
 }
 
 .sectionIcon {
-  color: var(--bg-white);
+  color: white;
+  opacity: 0.95;
 }
 
 .sectionTitle {
-  font-size: var(--font-size-3xl);
-  font-weight: var(--font-weight-bold);
-  color: var(--bg-white);
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: white;
   margin: 0;
+  letter-spacing: -0.02em;
 }
 
+/* --- VIEW SECTION (White) --- */
+.section:nth-of-type(2) {
+  background: var(--bg-card);
+  color: var(--text-main);
+  border: 1px solid var(--color-gray-200, #e2e8f0);
+  box-shadow: var(--shadow-sm);
+}
+
+.section:nth-of-type(2) .sectionTitle {
+  color: var(--text-main);
+}
+
+.section:nth-of-type(2) .sectionIcon {
+  color: var(--text-muted);
+}
+
+.section:nth-of-type(2)::before {
+  display: none;
+}
+
+/* --- GRID & CARDS --- */
 .moduleGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: var(--spacing-lg);
+  position: relative;
+  z-index: 1;
+  width: 100%;
 }
 
 .moduleCard {
-  background: var(--bg-white);
-  border: none;
-  border-radius: var(--radius-xl);
-  padding: var(--spacing-xl) var(--spacing-lg);
+  background: var(--bg-card);
+  border: 2px solid transparent;
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--spacing-md);
+  gap: 1rem;
   cursor: pointer;
-  transition: all var(--transition-slow);
-  box-shadow: var(--shadow-md);
-  position: relative;
-  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  box-shadow: var(--shadow-sm);
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.moduleCard::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #4a5568 0%, #2d3748 100%);
-  transform: scaleX(0);
-  transition: transform var(--transition-slow);
+.section:nth-of-type(2) .moduleCard {
+  background: var(--bg-body, #f7fafc);
+  box-shadow: none;
+  border: 1px solid transparent;
+}
+
+.section:nth-of-type(2) .moduleCard:hover {
+  background: white;
+  border-color: var(--color-gray-200);
 }
 
 .moduleCard:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
-}
-
-.moduleCard:hover::before {
-  transform: scaleX(1);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
 }
 
 .moduleCard.active {
-  transform: translateY(-8px);
-  box-shadow: 0 12px 30px rgba(74, 85, 104, 0.4);
-  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
-}
-
-.moduleCard.active::before {
-  transform: scaleX(1);
-  height: 6px;
-}
-
-.moduleCard[data-color="primary"] .iconWrapper {
-  background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
-}
-
-.moduleCard[data-color="success"] .iconWrapper {
-  background: var(--gradient-success);
-}
-
-.moduleCard[data-color="info"] .iconWrapper {
-  background: var(--gradient-info);
-}
-
-.moduleCard[data-color="warning"] .iconWrapper {
-  background: var(--gradient-warning);
+  border-color: var(--color-primary);
+  background-color: #fffaf0 !important;
 }
 
 .iconWrapper {
-  width: 80px;
-  height: 80px;
-  border-radius: var(--radius-full);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--bg-white);
-  transition: all var(--transition-slow);
+  color: white;
+  font-size: 1.5rem;
+  transition: transform 0.3s;
+  background: var(--color-primary);
 }
 
 .moduleCard:hover .iconWrapper {
   transform: scale(1.1) rotate(5deg);
 }
 
-.moduleCard.active .iconWrapper {
-  transform: scale(1.15) rotate(360deg);
-}
-
 .moduleLabel {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-semibold);
-  color: var(--color-gray-800);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-main);
   text-align: center;
 }
 
-.viewCard {
-  background: rgba(255, 255, 255, 0.95);
+.moduleCard[data-color="primary"] .iconWrapper {
+  background: var(--color-primary);
+  box-shadow: 0 4px 10px rgba(237, 137, 54, 0.3);
 }
 
-.viewCard[data-color="outline-primary"] .iconWrapper {
-  background: transparent;
-  border: 3px solid #4a5568;
-  color: #4a5568;
+.moduleCard[data-color="info"] .iconWrapper {
+  background: var(--color-accent-blue);
+  box-shadow: 0 4px 10px rgba(66, 153, 225, 0.3);
 }
 
-.viewCard[data-color="outline-success"] .iconWrapper {
-  background: transparent;
-  border: 3px solid var(--color-success);
-  color: var(--color-success);
+.moduleCard[data-color="warning"] .iconWrapper {
+  background: var(--color-accent-red);
+  box-shadow: 0 4px 10px rgba(245, 101, 101, 0.3);
 }
 
-.viewCard[data-color="outline-info"] .iconWrapper {
-  background: transparent;
-  border: 3px solid var(--color-primary);
+.moduleCard[data-color="success"] .iconWrapper {
+  background: var(--color-accent-green);
+  box-shadow: 0 4px 10px rgba(72, 187, 120, 0.3);
+}
+
+.moduleCard[data-color^="outline"] .iconWrapper {
+  background: white;
+  border: 2px solid currentColor;
+  box-shadow: none;
+}
+
+.moduleCard[data-color="outline-primary"] .iconWrapper {
   color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
-.viewCard[data-color="outline-warning"] .iconWrapper {
-  background: transparent;
-  border: 3px solid var(--color-warning);
-  color: var(--color-warning);
+.moduleCard[data-color="outline-info"] .iconWrapper {
+  color: var(--color-accent-blue);
+  border-color: var(--color-accent-blue);
 }
 
-.actionFeedback {
-  background: var(--gradient-success);
-  color: var(--bg-white);
+.moduleCard[data-color="outline-success"] .iconWrapper {
+  color: var(--color-accent-green);
+  border-color: var(--color-accent-green);
+}
+
+.moduleCard[data-color="outline-warning"] .iconWrapper {
+  color: var(--color-accent-red);
+  border-color: var(--color-accent-red);
+}
+
+
+/* ========================================= */
+/* 2. DOLNA SEKCJA - TREŚĆ (AdminContent)    */
+/* ========================================= */
+
+.contentWrapper {
+  animation: slideUp 0.4s ease-out;
+  /* padding i width są dziedziczone z .commonWrapper */
+}
+
+.contentCard {
+  background: var(--bg-card);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  border: 1px solid var(--color-gray-200, #e2e8f0);
+  width: 100%;
+}
+
+.cardNarrow {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.cardWide {
+  width: 100%;
+  max-width: 100%;
+}
+
+.contentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   padding: var(--spacing-lg) var(--spacing-xl);
-  border-radius: var(--radius-lg);
+  border-bottom: 1px solid var(--color-gray-200, #edf2f7);
+  background: var(--bg-body, #f8fafc);
+}
+
+.contentTitle {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-main);
+  margin: 0;
+}
+
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: white;
+  border: 1px solid var(--color-gray-300);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.2s;
+  box-shadow: var(--shadow-sm);
+}
+
+.closeButton:hover {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: white;
+  transform: rotate(90deg);
+}
+
+.contentBody {
+  padding: var(--spacing-xl);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.placeholder {
   text-align: center;
-  animation: slideIn var(--transition-slow);
-  box-shadow: 0 8px 25px rgba(72, 187, 120, 0.3);
+  color: var(--text-muted);
+  padding: 3rem;
+  font-style: italic;
+  font-size: 1.1rem;
 }
 
-.feedbackText {
-  font-size: var(--font-size-lg);
-  font-weight: var(--font-weight-medium);
-}
-
-.feedbackText strong {
-  font-weight: var(--font-weight-bold);
-  text-transform: capitalize;
-}
-
-@keyframes slideIn {
+@keyframes slideUp {
   from {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -187,39 +336,25 @@
 }
 
 @media (max-width: 768px) {
-  .modulesWrapper {
-    padding: 0 var(--spacing-md);
+
+  .commonWrapper,
+  .modulesWrapper,
+  .contentWrapper {
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
   }
 
   .section {
-    padding: var(--spacing-lg);
+    padding: var(--spacing-md);
   }
 
   .moduleGrid {
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: var(--spacing-md);
   }
 
-  .moduleCard {
-    padding: var(--spacing-lg) var(--spacing-md);
+  .contentHeader,
+  .contentBody {
+    padding: var(--spacing-md);
   }
-
-  .iconWrapper {
-    width: 60px;
-    height: 60px;
-  }
-
-  .sectionTitle {
-    font-size: var(--font-size-2xl);
-  }
-}
-
-.placeholder {
-  padding: var(--spacing-3xl);
-  text-align: center;
-  color: var(--color-gray-600);
-  font-size: var(--font-size-lg);
-  background: var(--color-gray-50);
-  border-radius: var(--radius-md);
-  border: 2px dashed var(--color-gray-300);
 }

@@ -142,18 +142,18 @@ export default function EventsPage() {
                         className={styles.addButton}
                         onClick={() => setIsCreateModalOpen(true)}
                     >
-                        <span>+</span> Dodaj ogłoszenie
+                        <span>+</span> Add Annoucement
                     </button>
                 </div>
             )}
 
             {loading ? (
-                <div style={{textAlign: 'center', padding: '2rem'}}>Ładowanie ogłoszeń...</div>
+                <div style={{textAlign: 'center', padding: '2rem'}}>Loading announcements...</div>
             ) : error ? (
-                 <div style={{textAlign: 'center', color: 'red', padding: '2rem'}}>Błąd: {error}</div>
+                 <div style={{textAlign: 'center', color: 'red', padding: '2rem'}}>Error: {error}</div>
             ) : announcementsData.length === 0 ? (
                 <div style={{textAlign: 'center', padding: '2rem', color: '#666'}}>
-                    Brak ogłoszeń dla Twojej grupy.
+                    No announcements for your group.
                 </div>
             ) : (
                 <>
@@ -168,14 +168,14 @@ export default function EventsPage() {
                                 />
                             ))}
                             {leftColumnItems.length === 0 && !featuredEvent && (
-                                <p style={{color: '#888'}}>Brak wydarzeń do wyświetlenia.</p>
+                                <p style={{color: '#888'}}>No events to display.</p>
                             )}
                         </div>
 
                         <div 
                           style={{ flex: 1, cursor: featuredEvent ? 'pointer' : 'default' }} 
                           onClick={() => featuredEvent && handleOpenModal(featuredEvent)}
-                          title={featuredEvent ? "Kliknij, aby zobaczyć szczegóły" : ""}
+                          title={featuredEvent ? "Click to see details" : ""}
                         >
                             <EventMainView announcement={featuredEvent} />
                         </div>
@@ -183,7 +183,7 @@ export default function EventsPage() {
 
                     {bottomGridItems.length > 0 && (
                         <div className={styles.bottomSection}>
-                            <h2 className={styles.sectionTitle}>Pozostałe wydarzenia</h2>
+                            <h2 className={styles.sectionTitle}>Rest of announcements</h2>
                             <div className={styles.eventsGrid}>
                                 {bottomGridItems.map((item) => (
                                     <EventSmallCard 

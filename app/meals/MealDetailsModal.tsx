@@ -1,7 +1,9 @@
 import React from "react";
-import {type MealDTO } from "./mealTypes";
+import { type MealDTO } from "./mealTypes";
 import styles from "./MealsPage.module.css";
-import { X } from "lucide-react";
+import { X, Info, Utensils } from "lucide-react";
+// Upewnij się, że importujesz SecureAnnouncementImage lub SecureImage (zależnie jak nazwałeś komponent w utils)
+import { SecureAnnouncementImage } from "~/utils/SecureAnnouncementImage";
 
 interface MealDetailsModalProps {
   isOpen: boolean;
@@ -12,57 +14,76 @@ interface MealDetailsModalProps {
 export const MealDetailsModal: React.FC<MealDetailsModalProps> = ({ isOpen, onClose, meal }) => {
   if (!isOpen || !meal) return null;
 
-  // Tłumaczenie typów na polski (opcjonalne, jeśli masz to w enumie)
   const typeMap: Record<string, string> = {
-    BREAKFAST: "Śniadanie",
-    LUNCH: "Obiad",
-    DINNER: "Kolacja",
-    SNACK: "Podwieczorek"
+    BREAKFAST: "Breakfast",
+    LUNCH: "Lunch",
+    DINNER: "Dinner",
+    SNACK: "Snack"
   };
 
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-           <h2 className={styles.modalTitle}>Szczegóły posiłku</h2>
-           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#718096' }}>
-               <X size={24} />
-           </button>
+        
+        {/* HEADER */}
+        <div className={styles.modalHeader}>
+          <h2 className={styles.modalTitle}>Meal Details</h2>
+          <button onClick={onClose} className={styles.closeButton}>
+            <X size={24} />
+          </button>
         </div>
 
-        <div>
-            <span className={styles.detailLabel}>Nazwa</span>
-            <div className={styles.detailValue} style={{ fontWeight: 600 }}>{meal.name}</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          
+          {/* NAME */}
+          <div>
+            <span className={styles.detailLabel}>Name</span>
+            <div className={styles.detailValueLarge}>{meal.name}</div>
+          </div>
 
-            <span className={styles.detailLabel}>Typ posiłku</span>
-            <div className={styles.detailValue}>{typeMap[meal.type] || meal.type}</div>
-
-            <span className={styles.detailLabel}>Informacje (alergeny, kcal)</span>
-            <div className={styles.detailValue}>
-                {meal.info || <span style={{ color: '#a0aec0', fontStyle: 'italic' }}>Brak dodatkowych informacji</span>}
+          {/* TYPE */}
+          <div>
+            <span className={styles.detailLabel}>Type</span>
+            <div className={styles.typeBadge}>
+              {typeMap[meal.type] || meal.type}
             </div>
+          </div>
 
-            <span className={styles.detailLabel}>Zdjęcie</span>
+          {/* INFO */}
+          <div>
+            <span className={styles.detailLabel} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <Info size={14} /> Info (Allergens, Kcal)
+            </span>
+            <div className={styles.infoBox}>
+              {meal.info || <span style={{ color: '#a0aec0', fontStyle: 'italic' }}>No additional info</span>}
+            </div>
+          </div>
+
+          {/* PHOTO */}
+          <div>
+            <span className={styles.detailLabel}>Photo</span>
+            
+            {/* Kontener o stałej wysokości */}
             <div className={styles.detailImageContainer}>
-                {meal.imagePath ? (
-                    // Zakładamy, że imagePath to URL dostępny dla frontendu. 
-                    // Jeśli to tylko nazwa pliku, musisz dodać prefix backendu, np: `http://localhost:8080/uploads/${meal.imagePath}`
-                    <img 
-                        src={meal.imagePath} 
-                        alt={meal.name} 
-                        className={styles.detailImage}
-                        onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none'; // Ukryj jeśli błąd ładowania
-                        }}
-                    />
-                ) : (
-                    <div className={styles.noImagePlaceholder}>Brak zdjęcia</div>
-                )}
+              {meal.imagePath ? (
+                <SecureAnnouncementImage 
+                  imagePath={meal.imagePath} 
+                  alt={meal.name}
+                  // Obrazek dopasuje się do kontenera (contain)
+                  className={styles.modalImageFull}
+                />
+              ) : (
+                <div className={styles.noImagePlaceholder}>
+                  <Utensils size={32} />
+                  <span>No photo</span>
+                </div>
+              )}
             </div>
+          </div>
         </div>
 
         <div className={styles.modalActions}>
-           <button type="button" onClick={onClose} className={styles.submitButton}>Zamknij</button>
+          <button type="button" onClick={onClose} className={styles.submitButton}>Close</button>
         </div>
       </div>
     </div>

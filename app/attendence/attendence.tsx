@@ -2,8 +2,8 @@
 import { useState, useEffect } from "react";
 import DashBoard from "~/commons/dashboard";
 import { api } from "~/utils/serviceAPI"; 
-import GroupsList from "./GroupsList"; 
-import AttendanceView from "./AttendanceView";
+import GroupsList from "./components/GroupsList"; 
+import AttendanceView from "./components/AttendanceView";
 import ParentAttendanceView from "./ParentAttendanceView"; 
 import { RefreshCw, AlertCircle } from "lucide-react";
 

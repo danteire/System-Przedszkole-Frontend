@@ -1,22 +1,27 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from 'react-bootstrap';
 import { api } from '../utils/serviceAPI';
-import styles from '../commons/PaginatedTable.module.css';
+import styles from '../attendence/AttendanceView.module.css'; // Ujednolicony CSS
+import { ArrowLeft, RefreshCw, Calendar, UserCheck, Clock } from "lucide-react";
 
-// Odzwierciedlenie Twojego Java DTO w TypeScript
 export interface AttendanceDTO {
   id: number;
-  date: string; 
-  status: string; 
+  date: string;
+  status: string;
   arrivalTime: string | null;
   departureTime: string | null;
   preschoolerId: number;
   recordedById: number;
 }
 
+interface AccountSimple {
+    id: number;
+    firstName: string;
+    lastName: string;
+}
+
 interface AttendanceHistoryProps {
   preschoolerId: number;
-  preschoolerName: string; 
+  preschoolerName: string;
   onBack: () => void;
 }
 
@@ -24,78 +29,132 @@ const AttendanceHistory: React.FC<AttendanceHistoryProps> = ({ preschoolerId, pr
   const [history, setHistory] = useState<AttendanceDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  const [userMap, setUserMap] = useState<Record<number, string>>({});
 
   useEffect(() => {
-    const fetchHistory = async () => {
+    const fetchData = async () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await api.get<AttendanceDTO[]>(`/attendance/preschooler/${preschoolerId}`);
+        const historyResponse = await api.get<AttendanceDTO[]>(`/attendance/preschooler/${preschoolerId}`);
         
-        if (Array.isArray(response)) {
-            const sorted = response.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-            setHistory(sorted);
+        if (Array.isArray(historyResponse)) {
+            const historyData = historyResponse.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            setHistory(historyData);
         } else {
             setHistory([]);
         }
+
+        try {
+            const accountsResponse = await api.get<AccountSimple[]>("/accounts");
+            if (Array.isArray(accountsResponse)) {
+                const map: Record<number, string> = {};
+                accountsResponse.forEach(acc => {
+                    map[acc.id] = `${acc.firstName} ${acc.lastName}`;
+                });
+                setUserMap(map);
+            }
+        } catch (accountError) {
+            console.warn("Could not fetch accounts map:", accountError);
+        }
+
       } catch (err: any) {
         console.error(err);
-        setError("Nie udało się pobrać historii obecności.");
+        setError("Failed to fetch history.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchHistory();
+    fetchData();
   }, [preschoolerId]);
 
-  if (loading) return <div className={styles.wrapper}>Ładowanie historii...</div>;
+  if (loading) return <div className={styles.loading}><RefreshCw className={styles.spinner} /> Loading history...</div>;
+
   if (error) {
     return (
-      <div className={styles.wrapper}>
-        <div style={{ color: 'red' }}>{error}</div>
-        <Button variant="secondary" onClick={onBack}>Wróć</Button>
+      <div className={styles.errorContainer}>
+        <div className={styles.errorBanner}>{error}</div>
+        <button className={styles.retryButton} onClick={onBack}>Back</button>
       </div>
     );
   }
 
+  // Definicja układu kolumn: Data | Status | Wejście | Wyjście | Zapisane przez
+  const gridTemplate = "140px 120px 100px 100px 1fr";
+
   return (
-    <div className={styles.wrapper}>
+    <div className={styles.container}>
       <div className={styles.header}>
-        <h3 className={styles.title}>Historia: {preschoolerName}</h3>
-        <Button variant="secondary" onClick={onBack}>← Wróć do listy dzieci</Button>
+        <button onClick={onBack} className={styles.backButton}>
+          <ArrowLeft size={20} />
+        </button>
+        <div className={styles.headerInfo}>
+          <h1 className={styles.title}>History: {preschoolerName}</h1>
+          <p className={styles.date}>Individual attendance record</p>
+        </div>
       </div>
 
       {history.length === 0 ? (
-        <div style={{ padding: '20px', textAlign: 'center' }}>Brak wpisów obecności dla tego dziecka.</div>
+        <div className={styles.empty}>
+            <Calendar size={48} style={{ opacity: 0.3, marginBottom: '10px' }} />
+            <span>No attendance records found for this student.</span>
+        </div>
       ) : (
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th className={styles.th}>Data</th>
-              <th className={styles.th}>Status</th>
-              <th className={styles.th}>Wejście</th>
-              <th className={styles.th}>Wyjście</th>
-              <th className={styles.th}>ID Rejestrującego</th>
-            </tr>
-          </thead>
-          <tbody>
-            {history.map((record) => (
-              <tr key={record.id}>
-                <td className={styles.td}>{record.date}</td>
-                <td className={styles.td}>
-                    {/* Tutaj możesz dodać proste mapowanie kolorów/tłumaczeń dla statusów */}
-                    <span style={{ fontWeight: 'bold', color: record.status === 'PRESENT' ? 'green' : 'red' }}>
-                        {record.status}
-                    </span>
-                </td>
-                <td className={styles.td}>{record.arrivalTime || '-'}</td>
-                <td className={styles.td}>{record.departureTime || '-'}</td>
-                <td className={styles.td}>{record.recordedById}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className={styles.historySection}> {/* Kontener "białej karty" */}
+          
+          {/* HEADER ROW */}
+          <div 
+            className={styles.historyHeaderRow} 
+            style={{ display: 'grid', gridTemplateColumns: gridTemplate, padding: '1rem', alignItems: 'center' }}
+          >
+            <div style={{ paddingLeft: '10px' }}>Date</div>
+            <div style={{ textAlign: 'center' }}>Status</div>
+            <div style={{ textAlign: 'center' }}>Arrival</div>
+            <div style={{ textAlign: 'center' }}>Departure</div>
+            <div>Recorded By</div> 
+          </div>
+
+          {/* DATA ROWS */}
+          {history.map((record) => (
+            <div 
+                key={record.id} 
+                className={styles.historyRow} 
+                style={{ display: 'grid', gridTemplateColumns: gridTemplate, padding: '1rem', alignItems: 'center', borderBottom: '1px solid #f0f0f0' }}
+            >
+              
+              {/* DATE CELL */}
+              <div className={`${styles.cell} ${styles.dateText}`} style={{ paddingLeft: '10px' }}>
+                <Calendar size={16} color="var(--text-muted)" />
+                {record.date}
+              </div>
+              
+              {/* STATUS CELL */}
+              <div style={{ textAlign: 'center' }}>
+                <span className={`${styles.statusBadge} ${styles['status' + record.status]}`}>
+                  {record.status}
+                </span>
+              </div>
+              
+              {/* ARRIVAL */}
+              <div className={`${styles.cell} ${styles.mono}`} style={{ justifyContent: 'center' }}>
+                {record.arrivalTime ? record.arrivalTime.substring(0, 5) : '-'}
+              </div>
+
+              {/* DEPARTURE */}
+              <div className={`${styles.cell} ${styles.mono}`} style={{ justifyContent: 'center' }}>
+                {record.departureTime ? record.departureTime.substring(0, 5) : '-'}
+              </div>
+              
+              {/* RECORDED BY CELL */}
+              <div className={styles.cell} style={{ color: 'var(--text-muted)' }}>
+                 <UserCheck size={16} style={{ marginRight: '6px' }}/>
+                 {userMap[record.recordedById] || `ID: ${record.recordedById}`}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

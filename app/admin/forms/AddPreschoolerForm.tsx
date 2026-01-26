@@ -174,10 +174,6 @@ export default function AddPreschoolerForm({ onSuccess }: AddPreschoolerFormProp
         throw new Error("You are not authenticated. Please log in again.");
       }
 
-      if (!api.isAdmin()) {
-        throw new Error("You don't have admin permissions.");
-      }
-
       const response = await api.post("/preschoolers", {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),

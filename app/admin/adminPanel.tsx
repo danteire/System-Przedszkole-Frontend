@@ -1,4 +1,3 @@
-// app/routes/adminPanel/adminPanel.tsx
 import { useState } from "react";
 import DashBoard from "~/commons/dashboard";
 import AdminModules from "./adminModules";
@@ -13,7 +12,12 @@ export default function AdminPanelPage() {
   const [activeAction, setActiveAction] = useState<string | null>(null);
 
   const handleAction = (action: string) => {
-    setActiveAction(action);
+    // Jeśli kliknięto w tę samą akcję (np. żeby ją zamknąć w Modules), obsłuż to
+    if (action === "") {
+        setActiveAction(null);
+    } else {
+        setActiveAction(action);
+    }
     console.log(`Action triggered: ${action}`);
   };
 
@@ -22,18 +26,28 @@ export default function AdminPanelPage() {
   };
 
   return (
-    <>
-      <div className="container mx-auto max-w-4xl">
-        <DashBoard />
-      </div>
+    <div className={styles.pageContainer}>
       
+      {/* Wrapper dla Dashboardu - używa tej samej szerokości co reszta */}
+        <DashBoard />
+      
+      {/* Kontener Panelu Admina */}
       <div className={styles.adminPanelContainer}>
-        <AdminModules onAction={handleAction} activeAction={activeAction} />
         
+        {/* Moduły (Kafelki) */}
+        <AdminModules 
+            onAction={handleAction} 
+            activeAction={activeAction} 
+        />
+        
+        {/* Treść (Formularze/Tabele) - renderowana warunkowo */}
         {activeAction && (
-          <AdminContent action={activeAction} onClose={handleClose} />
+          <AdminContent 
+            action={activeAction} 
+            onClose={handleClose} 
+          />
         )}
       </div>
-    </>
+    </div>
   );
 }

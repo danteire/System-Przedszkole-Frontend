@@ -1,8 +1,7 @@
-// app/routes/attendance/GroupsList.tsx
 import { useState, useEffect } from "react";
 import { api } from "~/utils/serviceAPI";
-import { Users, ChevronRight, RefreshCw } from "lucide-react";
-import styles from "./GroupsList.module.css";
+import { Users, ChevronRight, RefreshCw, User } from "lucide-react";
+import styles from "../GroupsList.module.css";
 
 interface Group {
   id: number;
@@ -98,7 +97,7 @@ export default function GroupsList({ onGroupSelect }: GroupsListProps) {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <div>
+        <div className={styles.headerInfo}>
           <h1 className={styles.title}>Select a Group</h1>
           <p className={styles.subtitle}>Choose a group to mark attendance</p>
         </div>
@@ -115,13 +114,21 @@ export default function GroupsList({ onGroupSelect }: GroupsListProps) {
             onClick={() => onGroupSelect(group.id)}
             className={styles.groupCard}
           >
-            <div className={styles.groupIcon}>
-              <Users size={32} />
+            {/* Ikona Grupy */}
+            <div className={styles.iconWrapper}>
+              <Users size={28} />
             </div>
+            
+            {/* Informacje o Grupie */}
             <div className={styles.groupInfo}>
               <h3 className={styles.groupName}>{group.groupName}</h3>
-              <h3 className={styles.groupName}>{group.mainCaretakerId}</h3>
+              <div className={styles.caretakerInfo}>
+                 <User size={14} /> 
+                 <span>Caretaker ID: {group.mainCaretakerId}</span>
+              </div>
             </div>
+            
+            {/* Strzałka */}
             <div className={styles.arrow}>
               <ChevronRight size={24} />
             </div>

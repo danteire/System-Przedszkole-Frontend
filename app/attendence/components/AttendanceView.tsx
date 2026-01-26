@@ -3,7 +3,7 @@ import { useState } from "react";
 import AttendanceToday from "./AttendanceToday";
 import HistoryDatesTable from "./HistoryDatesTable";
 import HistoryDetailsTable from "./HistoryDetailsTable";
-import type { AttendanceRecord } from "./attendanceTypes"; // Upewnij się, że ścieżka do typu jest poprawna
+import type { AttendanceRecord } from "../attendanceTypes"; // Upewnij się, że ścieżka do typu jest poprawna
 
 interface AttendanceViewProps {
   groupId: number;

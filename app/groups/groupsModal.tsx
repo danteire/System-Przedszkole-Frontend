@@ -1,20 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { type ActionFunctionArgs } from "react-router"; // To jest teraz zbędne, ale zostawiamy import
-
-import "./newGroupsModal.css";
 import { api } from '~/utils/serviceAPI';
+import styles from "./NewGroupModal.module.css";
+import { X, Users, User } from "lucide-react";
 
 interface NewGroupModalProps {
   show: boolean;
   onHide: () => void;
-  occupiedIds: number[]; // Nowy prop z ID, które są już zajęte
+  occupiedIds: number[];
 }
 
 interface GroupState {
   groupName: string;
-  mainCaretakerId: number | string; // ID z inputa jest lepiej trzymać jako string
+  mainCaretakerId: number | string;
 }
-// Dodajemy nowy interfejs dla nauczyciela
+
 interface Teacher {
   id: number;
   email: string;
@@ -25,34 +24,43 @@ interface Teacher {
 export default function NewGroupModal({ show, onHide, occupiedIds }: NewGroupModalProps) {
   const [groupState, setGroupState] = useState<GroupState>({
     groupName: '',
-    mainCaretakerId: '', // To będzie teraz przechowywać ID z wybranego <option>
+    mainCaretakerId: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  
-  // Zmiana: przechowujemy całe obiekty nauczycieli, nie tylko maile
   const [teachers, setTeachers] = useState<Teacher[]>([]);
 
   useEffect(() => {
     if (show) {
+      // Reset stanu przy otwarciu
+      setGroupState({ groupName: '', mainCaretakerId: '' });
+      setSubmitError(null);
       fetchTeachers();
     }
   }, [show]);
 
   const fetchTeachers = async () => {
     try {
-      // Pobieramy pełne dane o kontach nauczycieli
       const response = await api.get<Teacher[]>("/accounts/teachers");
-      setTeachers(response);
+      // Upewniamy się, że to tablica
+      const data = Array.isArray(response) ? response : (response as any).data || [];
+      setTeachers(data);
     } catch (err) {
       console.error("❌ Failed to fetch teachers:", err);
+      setSubmitError("Failed to load teachers list.");
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitError(null);
+
+    if (!groupState.groupName.trim()) {
+        setSubmitError("Group name is required.");
+        return;
+    }
     if (!groupState.mainCaretakerId) {
-        setSubmitError("Wybierz opiekuna grupy.");
+        setSubmitError("Please select a main caretaker.");
         return;
     }
 
@@ -62,10 +70,10 @@ export default function NewGroupModal({ show, onHide, occupiedIds }: NewGroupMod
         groupName: groupState.groupName,
         mainCaretakerId: Number(groupState.mainCaretakerId)
       });
-      setGroupState({ groupName: '', mainCaretakerId: '' });
       onHide();
-    } catch (error) {
-      setSubmitError("Nie udało się utworzyć grupy.");
+    } catch (error: any) {
+      console.error(error);
+      setSubmitError(error.message || "Failed to create group.");
     } finally {
       setIsSubmitting(false);
     }
@@ -74,52 +82,81 @@ export default function NewGroupModal({ show, onHide, occupiedIds }: NewGroupMod
   if (!show) return null;
 
   return (
-    <div className="modal-overlay" onClick={onHide}>
-      <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-        <h2>Create New Group</h2>
-        {submitError && <p style={{ color: 'red' }}>{submitError}</p>}
+    <div className={styles.modalOverlay} onClick={onHide}>
+      <div className={styles.modalCard} onClick={(e) => e.stopPropagation()}>
         
-        <form className="group-form" onSubmit={handleSubmit}>
-          <input 
-            type="text" 
-            name="groupName" 
-            placeholder="Nazwa grupy" 
-            required 
-            value={groupState.groupName}
-            onChange={(e) => setGroupState({...groupState, groupName: e.target.value})}
-          />
+        {/* HEADER */}
+        <div className={styles.modalHeader}>
+          <h2 className={styles.modalTitle}>Create New Group</h2>
+          <button onClick={onHide} className={styles.closeButton}>
+            <X size={24} />
+          </button>
+        </div>
 
-          {/* ZMIANA: Zamiast inputa typu number, dajemy select */}
-          <select 
-            name="mainCaretakerId"
-            value={groupState.mainCaretakerId}
-            onChange={(e) => setGroupState({...groupState, mainCaretakerId: e.target.value})}
-            required
-            className="teacher-select"
-          >
-            <option value="">-- Wybierz Opiekuna --</option>
-            {teachers.map((teacher) => {
-              // Sprawdzamy, czy ten nauczyciel jest już opiekunem innej grupy
-              const isOccupied = occupiedIds.includes(teacher.id);
+        {submitError && (
+            <div className={styles.errorMessage}>
+                {submitError}
+            </div>
+        )}
 
-              return (
-                <option 
-                  key={teacher.id} 
-                  value={teacher.id} 
-                  disabled={isOccupied} // Blokujemy wybór zajętego nauczyciela
-                  style={isOccupied ? { color: '#ccc' } : {}}
-                >
-                  {teacher.firstName} {teacher.lastName} 
-                  {isOccupied ? " (Już przypisany)" : ` (${teacher.email})`}
-                </option>
-              );
-            })}
-          </select>
+        <form onSubmit={handleSubmit} className={styles.modalForm}>
           
-          <div className="modal-actions">
-            <button type="button" onClick={onHide} disabled={isSubmitting}>Anuluj</button>
-            <button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Tworzenie...' : 'Stwórz'}
+          {/* GROUP NAME */}
+          <div className={styles.formGroup}>
+            <label className={styles.label}>
+                <Users size={16} style={{marginRight: '6px'}}/> Group Name
+            </label>
+            <input 
+              type="text" 
+              className={styles.formInput}
+              placeholder="e.g. Tigers, Sunflowers..." 
+              required 
+              value={groupState.groupName}
+              onChange={(e) => setGroupState({...groupState, groupName: e.target.value})}
+            />
+          </div>
+
+          {/* CARETAKER SELECT */}
+          <div className={styles.formGroup}>
+            <label className={styles.label}>
+                <User size={16} style={{marginRight: '6px'}}/> Main Caretaker
+            </label>
+            <div className={styles.selectWrapper}>
+                <select 
+                className={styles.formSelect}
+                value={groupState.mainCaretakerId}
+                onChange={(e) => setGroupState({...groupState, mainCaretakerId: e.target.value})}
+                required
+                >
+                <option value="">-- Select Teacher --</option>
+                {teachers.map((teacher) => {
+                    const isOccupied = occupiedIds.includes(teacher.id);
+                    return (
+                    <option 
+                        key={teacher.id} 
+                        value={teacher.id} 
+                        disabled={isOccupied}
+                        className={isOccupied ? styles.optionDisabled : ''}
+                    >
+                        {teacher.firstName} {teacher.lastName} 
+                        {isOccupied ? " (Already assigned)" : ""}
+                    </option>
+                    );
+                })}
+                </select>
+            </div>
+            <small style={{color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '4px'}}>
+                Only teachers not currently assigned to other groups can be selected.
+            </small>
+          </div>
+          
+          {/* ACTIONS */}
+          <div className={styles.modalActions}>
+            <button type="button" onClick={onHide} className={styles.cancelButton} disabled={isSubmitting}>
+                Cancel
+            </button>
+            <button type="submit" className={styles.submitButton} disabled={isSubmitting}>
+              {isSubmitting ? 'Creating...' : 'Create Group'}
             </button>
           </div>
         </form>

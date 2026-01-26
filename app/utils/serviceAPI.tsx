@@ -20,6 +20,7 @@ interface ApiError {
 
 class ApiClient {
   private baseUrl: string;
+  public readonly apiUrl: string; // Expose if needed, but better use helpers
   private accessToken: string | null = null;
   private accountInfo: AccountInfo | null = null; // ← Przechowuj w pamięci
   private isRefreshing: boolean = false;
@@ -30,7 +31,82 @@ class ApiClient {
 
   constructor(baseUrl: string) {
     this.baseUrl = baseUrl;
+    this.apiUrl = baseUrl;
     this.loadFromStorage(); // ← Załaduj WSZYSTKO przy starcie
+  }
+
+  // Helpery do obrazków
+  getMealImageUrl(path: string | undefined): string | undefined {
+    if (!path) return undefined;
+    if (path.startsWith('https')) return path; // Jeśli to pełny URL
+    return `${this.baseUrl}/meals/image/${path}`;
+  }
+
+  getAnnouncementImageUrl(path: string | undefined): string | undefined {
+    if (!path) return undefined;
+    if (path.startsWith('https')) return path;
+    return `${this.baseUrl}/announcements/image/${path}`;
+  }
+
+  // ============================================
+  // OBSŁUGA OBRAZÓW (Secure Fetch)
+  // ============================================
+
+  /**
+   * PRYWATNA metoda pomocnicza - "silnik" do pobierania obrazków.
+   * * @param path - nazwa pliku (np. "pizza.jpg")
+   * @param endpointPrefix - prefiks endpointu API (np. "/meals/image" lub "/announcements/image")
+   */
+  private async _fetchSecureImage(path: string | undefined, endpointPrefix: string): Promise<string | null> {
+    if (!path) return null;
+
+    // 1. Jeśli to zewnętrzny link, zwróć go bez zmian
+    if (path.startsWith('http') || path.startsWith('https')) {
+      return path;
+    }
+
+    // 2. Wyczyść ścieżkę (usuń początkowy slash, jeśli jest)
+    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    
+    // 3. Zbuduj pełny endpoint
+    const endpoint = `${endpointPrefix}/${cleanPath}`;
+
+    try {
+      // 4. Pobierz Blob z autoryzacją
+      const blob = await this.download(endpoint);
+
+      // 5. Utwórz URL
+      return URL.createObjectURL(blob);
+    } catch (error) {
+      console.error(`❌ Failed to load image from ${endpoint}:`, error);
+      return null;
+    }
+  }
+
+  /**
+   * Publiczna metoda dla Ogłoszeń (zrefaktoryzowana)
+   * Endpoint w Springu: @RequestMapping("/announcements") + @GetMapping("/image/{path}")
+   */
+  async getAnnouncementImage(path: string | undefined): Promise<string | null> {
+    return this._fetchSecureImage(path, '/announcements/image');
+  }
+
+  /**
+   * NOWA Metoda (np. dla Posiłków lub innego kontrolera)
+   * Zakładając, że Twój nowy endpoint znajduje się w kontrolerze zmapowanym na "/meals"
+   * Endpoint w Springu: @RequestMapping("/meals") + @GetMapping("/image/{path}")
+   */
+  async getMealImage(path: string | undefined): Promise<string | null> {
+    return this._fetchSecureImage(path, '/meals/image');
+  }
+
+  /**
+   * Zwalnianie pamięci (bez zmian)
+   */
+  revokeImage(url: string | null | undefined): void {
+    if (url && url.startsWith('blob:')) {
+      URL.revokeObjectURL(url);
+    }
   }
 
   // ============================================
@@ -45,7 +121,7 @@ class ApiClient {
       // Załaduj token
       this.accessToken = localStorage.getItem('accessToken');
       console.log('📥 Loaded token from storage:', this.accessToken ? 'Token exists' : 'No token found');
-      
+
       // Załaduj informacje o koncie
       const accountJson = localStorage.getItem('account');
       if (accountJson) {
@@ -64,7 +140,7 @@ class ApiClient {
 
   private saveToken(accessToken: string): void {
     this.accessToken = accessToken;
-    
+
     if (typeof window !== 'undefined') {
       localStorage.setItem('accessToken', accessToken);
       console.log('💾 Token saved to storage');
@@ -73,7 +149,7 @@ class ApiClient {
 
   private clearToken(): void {
     this.accessToken = null;
-    
+
     if (typeof window !== 'undefined') {
       localStorage.removeItem('accessToken');
       console.log('🗑️ Token cleared from storage');
@@ -85,7 +161,7 @@ class ApiClient {
    */
   private saveAccountInfo(accountInfo: AccountInfo): void {
     this.accountInfo = accountInfo; // ← Zapisz w pamięci
-    
+
     if (typeof window !== 'undefined') {
       localStorage.setItem('account', JSON.stringify(accountInfo));
       console.log('💾 Account info saved:', {
@@ -101,7 +177,7 @@ class ApiClient {
    */
   private clearAccountInfo(): void {
     this.accountInfo = null; // ← Wyczyść z pamięci
-    
+
     if (typeof window !== 'undefined') {
       localStorage.removeItem('account');
       console.log('🗑️ Account info cleared from storage');
@@ -212,23 +288,23 @@ class ApiClient {
       }
 
       const data: TokenResponse = await response.json();
-      
+
       console.log('✅ Token refreshed successfully');
-      
+
       this.saveToken(data.accessToken);
       this.saveAccountInfo(data.account); // ← Zapisz też nowe info o koncie
-      
+
       return data.accessToken;
     } catch (error) {
       console.error('❌ Token refresh failed:', error);
-      
+
       this.clearToken();
       this.clearAccountInfo();
-      
+
       if (typeof window !== 'undefined') {
         window.location.href = '/';
       }
-      
+
       throw error;
     }
   }
@@ -245,7 +321,7 @@ class ApiClient {
     this.failedQueue = [];
   }
 
-// ============================================
+  // ============================================
   // REQUEST (ZMODYFIKOWANA)
   // ============================================
 
@@ -262,7 +338,7 @@ class ApiClient {
     // Jeśli wysyłamy plik, przeglądarka sama musi ustawić Content-Type z "boundary".
     // Musimy usunąć 'application/json' dodane przez getHeaders.
     if (options.body instanceof FormData) {
-        delete headers['Content-Type'];
+      delete headers['Content-Type'];
     }
 
     console.log(`📤 Request: ${method} ${endpoint}`);
@@ -291,16 +367,16 @@ class ApiClient {
 
           try {
             const newAccessToken = await this.refreshAccessToken();
-            
+
             this.isRefreshing = false;
             this.processQueue(null, newAccessToken);
 
             console.log(`🔄 Retrying request: ${method} ${endpoint}`);
-            
+
             const newHeaders = this.getHeaders(options.headers);
             // ← MODYFIKACJA: Ponowne usunięcie Content-Type przy retry
             if (options.body instanceof FormData) {
-                delete newHeaders['Content-Type'];
+              delete newHeaders['Content-Type'];
             }
 
             response = await fetch(url, {
@@ -311,42 +387,42 @@ class ApiClient {
 
             if (response.status === 403) {
               // ... (reszta logiki błędu bez zmian)
-               console.error('❌ Still 403 after refresh - Logging out');
-               await this.logErrorResponse(response, endpoint, method);
-               this.clearToken();
-               this.clearAccountInfo();
-               if (typeof window !== 'undefined') window.location.href = '/';
-               throw new Error('Session expired');
+              console.error('❌ Still 403 after refresh - Logging out');
+              await this.logErrorResponse(response, endpoint, method);
+              this.clearToken();
+              this.clearAccountInfo();
+              if (typeof window !== 'undefined') window.location.href = '/';
+              throw new Error('Session expired');
             }
 
           } catch (refreshError) {
-             // ... (reszta logiki błędu bez zmian)
-             this.isRefreshing = false;
-             this.processQueue(refreshError, null);
-             this.clearToken();
-             this.clearAccountInfo();
-             if (typeof window !== 'undefined') window.location.href = '/';
-             throw refreshError;
+            // ... (reszta logiki błędu bez zmian)
+            this.isRefreshing = false;
+            this.processQueue(refreshError, null);
+            this.clearToken();
+            this.clearAccountInfo();
+            if (typeof window !== 'undefined') window.location.href = '/';
+            throw refreshError;
           }
         } else {
-           // ... (kolejkowanie zapytań bez zmian)
-           console.log('⏳ Waiting for token refresh...');
-           await new Promise<string>((resolve, reject) => {
-             this.failedQueue.push({ resolve, reject });
-           });
-           
-           console.log(`🔄 Retrying queued request: ${method} ${endpoint}`);
-           const newHeaders = this.getHeaders(options.headers);
-           // ← MODYFIKACJA: Ponowne usunięcie Content-Type przy retry z kolejki
-           if (options.body instanceof FormData) {
-               delete newHeaders['Content-Type'];
-           }
-           
-           response = await fetch(url, {
-             ...options,
-             headers: newHeaders,
-             credentials: 'include',
-           });
+          // ... (kolejkowanie zapytań bez zmian)
+          console.log('⏳ Waiting for token refresh...');
+          await new Promise<string>((resolve, reject) => {
+            this.failedQueue.push({ resolve, reject });
+          });
+
+          console.log(`🔄 Retrying queued request: ${method} ${endpoint}`);
+          const newHeaders = this.getHeaders(options.headers);
+          // ← MODYFIKACJA: Ponowne usunięcie Content-Type przy retry z kolejki
+          if (options.body instanceof FormData) {
+            delete newHeaders['Content-Type'];
+          }
+
+          response = await fetch(url, {
+            ...options,
+            headers: newHeaders,
+            credentials: 'include',
+          });
         }
       }
 
@@ -358,28 +434,28 @@ class ApiClient {
       }
 
       console.log(`✅ Response: ${method} ${endpoint} - ${response.status}`);
-      
+
       // ← MODYFIKACJA: Obsługa pobierania pliku (Blob)
       if (responseType === 'blob') {
-          return response.blob() as unknown as T;
+        return response.blob() as unknown as T;
       }
 
       const contentLength = response.headers.get('content-length');
       if (contentLength === '0' || response.status === 204) {
         return {} as T;
       }
-      
+
       return response.json();
 
     } catch (error) {
-       // ... (obsługa błędów sieciowych bez zmian)
-       if (error instanceof TypeError) {
-         console.group('❌ Network Error');
-         console.error('Endpoint:', `${method} ${endpoint}`);
-         console.error('Error:', error.message);
-         console.groupEnd();
-       }
-       throw error;
+      // ... (obsługa błędów sieciowych bez zmian)
+      if (error instanceof TypeError) {
+        console.group('❌ Network Error');
+        console.error('Endpoint:', `${method} ${endpoint}`);
+        console.error('Error:', error.message);
+        console.groupEnd();
+      }
+      throw error;
     }
   }
 
@@ -439,6 +515,8 @@ class ApiClient {
       method: 'GET',
     }, 'blob'); // ← Przekazujemy flagę 'blob'
   }
+
+  
   // ============================================
   // AUTENTYKACJA
   // ============================================
@@ -463,12 +541,12 @@ class ApiClient {
       }
 
       const data: TokenResponse = await response.json();
-      
+
       this.saveToken(data.accessToken);
       this.saveAccountInfo(data.account);
 
       console.log('✅ Login successful');
-      
+
       return data;
     } catch (error) {
       console.error('❌ Login failed');
@@ -497,24 +575,24 @@ class ApiClient {
     } finally {
       this.clearToken();
       this.clearAccountInfo();
-      
+
       if (typeof window !== 'undefined') {
         window.location.href = '/';
       }
-      
+
       console.log('✅ Logged out');
     }
   }
 
- 
+
   isAdmin(): boolean {
     console.log('🔍 Checking admin status...');
     console.log('  - accountInfo:', this.accountInfo);
     console.log('  - accountType:', this.accountInfo?.accountType);
-    
+
     const isAdmin = this.accountInfo?.accountType === 'ADMIN';
     console.log('  - isAdmin:', isAdmin);
-    
+
     return isAdmin;
   }
 
@@ -527,7 +605,7 @@ class ApiClient {
     return this.accountInfo?.accountType === 'PARENT';
   }
 
-  
+
   getAccountType(): string | null {
     return this.accountInfo?.accountType || null;
   }
@@ -536,7 +614,7 @@ class ApiClient {
     return this.accountInfo;
   }
 
-  
+
   isAuthenticated(): boolean {
     const isAuth = !!this.accessToken;
     console.log('🔍 isAuthenticated:', isAuth);
