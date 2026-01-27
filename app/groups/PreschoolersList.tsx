@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../utils/serviceAPI';
 import styles from '../attendence/AttendanceView.module.css'; // Unified styles
-import AttendanceHistory from './AttendanceHistory'; // Upewnij się co do ścieżki importu
-import { ArrowLeft, RefreshCw, ChevronRight, User, GraduationCap } from "lucide-react";
+import AttendanceHistory from './AttendanceHistory';
+import AddPreschoolerModal from './AddPreschoolerModal'; // Import nowego modala
+import { ArrowLeft, RefreshCw, ChevronRight, Plus, GraduationCap } from "lucide-react";
 
 interface Preschooler {
   id: number;
@@ -21,22 +22,27 @@ const PreschoolersList: React.FC<PreschoolersListProps> = ({ groupId, groupName,
   const [kids, setKids] = useState<Preschooler[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Stan dla widoku historii
   const [selectedChildHistory, setSelectedChildHistory] = useState<Preschooler | null>(null);
+  // Stan dla modala dodawania
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  const fetchKids = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.get<Preschooler[]>(`/preschoolers/group/${groupId}`);
+      setKids(Array.isArray(response) ? response : []);
+    } catch (err: any) {
+      console.error(err);
+      setError("Failed to load students.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchKids = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await api.get<Preschooler[]>(`/preschoolers/group/${groupId}`);
-        setKids(Array.isArray(response) ? response : []);
-      } catch (err: any) {
-        console.error(err);
-        setError("Failed to load students.");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchKids();
   }, [groupId]);
 
@@ -67,13 +73,24 @@ const PreschoolersList: React.FC<PreschoolersListProps> = ({ groupId, groupName,
   return (
     <div className={styles.container}>
       <div className={styles.header}>
-        <button onClick={onBack} className={styles.backButton}>
-          <ArrowLeft size={20} />
-        </button>
-        <div className={styles.headerInfo}>
-          <h1 className={styles.title}>Group: {groupName}</h1>
-          <p className={styles.date}>Student list & attendance records</p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+            <button onClick={onBack} className={styles.backButton}>
+            <ArrowLeft size={20} />
+            </button>
+            <div className={styles.headerInfo}>
+            <h1 className={styles.title}>Group: {groupName}</h1>
+            <p className={styles.date}>Preschoolers list & attendance records</p>
+            </div>
         </div>
+
+        {/* PRZYCISK DODAWANIA */}
+        <button 
+            className={styles.saveButton} 
+            onClick={() => setShowAddModal(true)}
+            style={{ padding: '10px 20px', fontSize: '0.9rem' }}
+        >
+          <Plus size={18} /> Add Student
+        </button>
       </div>
 
       {kids.length === 0 ? (
@@ -114,7 +131,7 @@ const PreschoolersList: React.FC<PreschoolersListProps> = ({ groupId, groupName,
               {/* ACTION BUTTON */}
               <div style={{ textAlign: 'center' }}>
                 <button
-                  className={styles.statusBtn} // Reuse existing class
+                  className={styles.statusBtn} 
                   style={{ 
                       background: 'var(--bg-body)', 
                       color: 'var(--text-main)', 
@@ -135,6 +152,18 @@ const PreschoolersList: React.FC<PreschoolersListProps> = ({ groupId, groupName,
           ))}
         </div>
       )}
+
+      {/* MODAL DODAWANIA DZIECKA */}
+      <AddPreschoolerModal 
+        show={showAddModal}
+        onHide={() => setShowAddModal(false)}
+        groupId={groupId}
+        groupName={groupName}
+        onSuccess={() => {
+            setShowAddModal(false);
+            fetchKids(); // Odśwież listę po dodaniu
+        }}
+      />
     </div>
   );
 };

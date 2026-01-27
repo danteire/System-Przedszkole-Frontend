@@ -9,20 +9,29 @@ interface Group {
   mainCaretakerId: number;
 }
 
+// 1. Dodajemy interfejs dla Nauczyciela
+interface Teacher {
+  id: number;
+  firstName: string;
+  lastName: string;
+}
+
 interface GroupsListProps {
   onGroupSelect: (groupId: number) => void;
 }
 
 export default function GroupsList({ onGroupSelect }: GroupsListProps) {
   const [groups, setGroups] = useState<Group[]>([]);
+  // 2. Stan do przechowywania mapy ID -> Imię Nazwisko
+  const [caretakerMap, setCaretakerMap] = useState<Map<number, string>>(new Map());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    loadGroups();
+    loadData();
   }, []);
 
-  const loadGroups = async () => {
+  const loadData = async () => {
     setLoading(true);
     setError(null);
 
@@ -31,23 +40,39 @@ export default function GroupsList({ onGroupSelect }: GroupsListProps) {
         throw new Error("You are not authenticated. Please log in again.");
       }
 
-      console.log("📤 Fetching groups...");
+      console.log("📤 Fetching groups and caretakers...");
 
-      const response = await api.get<Group[] | { data: Group[] }>("/groups");
+      // 3. Pobieramy równolegle grupy i listę nauczycieli
+      const [groupsRes, teachersRes] = await Promise.all([
+        api.get<Group[] | { data: Group[] }>("/groups"),
+        api.get<Teacher[]>("/accounts/teachers")
+      ]);
 
+      // --- Obsługa danych grup ---
       let groupsData: Group[];
-      if (Array.isArray(response)) {
-        groupsData = response;
-      } else if (response && 'data' in response && Array.isArray(response.data)) {
-        groupsData = response.data;
+      if (Array.isArray(groupsRes)) {
+        groupsData = groupsRes;
+      } else if (groupsRes && 'data' in groupsRes && Array.isArray((groupsRes as any).data)) {
+        groupsData = (groupsRes as any).data;
       } else {
         groupsData = [];
       }
 
-      console.log("✅ Groups loaded:", groupsData);
+      // --- Obsługa danych nauczycieli i tworzenie mapy ---
+      const teachersData = Array.isArray(teachersRes) ? teachersRes : [];
+      const newCaretakerMap = new Map<number, string>();
+      
+      teachersData.forEach(t => {
+        newCaretakerMap.set(t.id, `${t.firstName} ${t.lastName}`);
+      });
+
+      console.log("✅ Data loaded:", { groups: groupsData.length, caretakers: newCaretakerMap.size });
+      
       setGroups(groupsData);
+      setCaretakerMap(newCaretakerMap);
+
     } catch (err: any) {
-      console.error("❌ Failed to load groups:", err);
+      console.error("❌ Failed to load data:", err);
 
       if (err.status === 401) {
         setError("Access denied. You don't have permission to view groups.");
@@ -74,7 +99,7 @@ export default function GroupsList({ onGroupSelect }: GroupsListProps) {
     return (
       <div className={styles.errorContainer}>
         <div className={styles.error}>{error}</div>
-        <button onClick={loadGroups} className={styles.retryButton}>
+        <button onClick={loadData} className={styles.retryButton}>
           Try Again
         </button>
       </div>
@@ -86,7 +111,7 @@ export default function GroupsList({ onGroupSelect }: GroupsListProps) {
       <div className={styles.empty}>
         <Users size={48} className={styles.emptyIcon} />
         <p>No groups found</p>
-        <button onClick={loadGroups} className={styles.refreshButton}>
+        <button onClick={loadData} className={styles.refreshButton}>
           <RefreshCw size={16} />
           Refresh
         </button>
@@ -101,7 +126,7 @@ export default function GroupsList({ onGroupSelect }: GroupsListProps) {
           <h1 className={styles.title}>Select a Group</h1>
           <p className={styles.subtitle}>Choose a group to mark attendance</p>
         </div>
-        <button onClick={loadGroups} className={styles.refreshButton}>
+        <button onClick={loadData} className={styles.refreshButton}>
           <RefreshCw size={16} />
           Refresh
         </button>
@@ -124,7 +149,10 @@ export default function GroupsList({ onGroupSelect }: GroupsListProps) {
               <h3 className={styles.groupName}>{group.groupName}</h3>
               <div className={styles.caretakerInfo}>
                  <User size={14} /> 
-                 <span>Caretaker ID: {group.mainCaretakerId}</span>
+                 {/* 4. Wyświetlanie imienia i nazwiska z mapy */}
+                 <span>
+                    {caretakerMap.get(group.mainCaretakerId) || `Caretaker Unassigned`}
+                 </span>
               </div>
             </div>
             

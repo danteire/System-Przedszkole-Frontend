@@ -1,10 +1,10 @@
 // app/meals/meals.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import DashBoard from "~/commons/dashboard";
 import { api } from "~/utils/serviceAPI";
 import styles from "./MealsPage.module.css";
 import { type MealDTO, type MenuPlanResponseDTO, MealType } from "./mealTypes";
-import { RefreshCw, Plus } from "lucide-react";
+import { RefreshCw, Plus, ChevronLeft, ChevronRight } from "lucide-react";
 
 // Import new components
 import { DayColumn } from "./DayColumn";
@@ -26,27 +26,42 @@ export default function MealsPage() {
   const [editingDate, setEditingDate] = useState<string>("");
   const [editingPlan, setEditingPlan] = useState<MenuPlanResponseDTO | null>(null);
 
+  // --- LOGIKA DAT I NAWIGACJI ---
+
+  const getInitialMonday = () => {
+    const today = new Date();
+    const dayOfWeek = today.getDay(); // 0 = Niedziela, 6 = Sobota
+    const target = new Date(today);
+
+    if (dayOfWeek === 0) {
+      target.setDate(today.getDate() + 1);
+    } else if (dayOfWeek === 6) {
+      target.setDate(today.getDate() + 2);
+    } else {
+      const diff = today.getDate() - dayOfWeek + 1;
+      target.setDate(diff);
+    }
+    return target;
+  };
+
+  const [currentMonday, setCurrentMonday] = useState<Date>(getInitialMonday);
+
   const accountType = api.getAccountType();
   const canEdit = accountType === "ADMIN" || accountType === "TEACHER";
 
-  const getCurrentWeekDays = () => {
-    const curr = new Date();
+  const getWeekDays = useCallback((monday: Date) => {
     const week = [];
-    const day = curr.getDay();
-    const diff = curr.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(curr.setDate(diff));
-
     for (let i = 0; i < 5; i++) {
       const day = new Date(monday);
       day.setDate(monday.getDate() + i);
       week.push(day.toISOString().split('T')[0]);
     }
     return week;
-  };
+  }, []);
 
-  const fetchWeekMenu = async () => {
+  const fetchWeekMenu = useCallback(async () => {
     setLoading(true);
-    const days = getCurrentWeekDays();
+    const days = getWeekDays(currentMonday);
     try {
       const promises = days.map(async (date) => {
         try {
@@ -63,7 +78,7 @@ export default function MealsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentMonday, getWeekDays]);
 
   const fetchAllMeals = async () => {
     if (canEdit) {
@@ -76,12 +91,25 @@ export default function MealsPage() {
     }
   };
 
+  const changeWeek = (direction: number) => {
+    const newDate = new Date(currentMonday);
+    newDate.setDate(currentMonday.getDate() + (direction * 7));
+    setCurrentMonday(newDate);
+  };
+
   useEffect(() => {
     fetchWeekMenu();
-    fetchAllMeals();
-  }, []);
+    if (availableMeals.length === 0) fetchAllMeals();
+  }, [fetchWeekMenu]); 
 
-  // API Handler: Save Plan
+  const formatWeekRange = () => {
+    const endOfWeek = new Date(currentMonday);
+    endOfWeek.setDate(currentMonday.getDate() + 4); 
+    
+    const options: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit' };
+    return `${currentMonday.toLocaleDateString('pl-PL', options)} - ${endOfWeek.toLocaleDateString('pl-PL', options)}`;
+  };
+
   const handleSavePlan = async (date: string, breakfastId: number | null, lunchId: number | null, dinnerId: number | null, snackId: number | null) => {
     const payload = {
       date: date,
@@ -94,25 +122,21 @@ export default function MealsPage() {
     await fetchWeekMenu();
   };
 
-  // API Handler: Create Meal
   const handleCreateMeal = async (name: string, type: MealType, info: string, file: File | null, assignDate: string) => {
     const formData = new FormData();
     const mealDto = { name, type, info };
 
     const jsonBlob = new Blob([JSON.stringify(mealDto)], { type: "application/json" });
-    formData.append("meal", jsonBlob); // Fix: Matches @RequestPart("meal")
+    formData.append("meal", jsonBlob);
 
     if (file) {
-      formData.append("file", file); // Fix: Matches @RequestPart("file")
+      formData.append("file", file);
     }
 
-    // 1. Create meal
     const createdMeal = await api.upload<MealDTO>("/meals", formData);
 
-    // 2. If date assigned, assign to plan
     if (assignDate && createdMeal?.id) {
       try {
-        // a) Get current plan
         let currentPlanRequest = {
           date: assignDate,
           breakfastId: null as number | null,
@@ -130,11 +154,9 @@ export default function MealsPage() {
             currentPlanRequest.snackId = existingPlan.snack?.id || null;
           }
         } catch (e) {
-          // Ignore 404
           console.log("Creating new plan for date: " + assignDate);
         }
 
-        // b) Assign new meal ID
         switch (type) {
           case MealType.BREAKFAST: currentPlanRequest.breakfastId = createdMeal.id; break;
           case MealType.LUNCH: currentPlanRequest.lunchId = createdMeal.id; break;
@@ -142,7 +164,6 @@ export default function MealsPage() {
           case MealType.SNACK: currentPlanRequest.snackId = createdMeal.id; break;
         }
 
-        // c) Save updated plan
         await api.post("/menu", currentPlanRequest);
 
       } catch (e) {
@@ -151,10 +172,12 @@ export default function MealsPage() {
       }
     }
 
-    // 3. Refresh data
     await fetchAllMeals();
     if (assignDate) {
-      await fetchWeekMenu();
+        const days = getWeekDays(currentMonday);
+        if (days.includes(assignDate)) {
+            await fetchWeekMenu();
+        }
     }
   };
 
@@ -172,20 +195,46 @@ export default function MealsPage() {
     <>
       <DashBoard />
       <div className={styles.wrapper}>
+        
+        {/* --- HEADER: Left/Right Arrows + Centered Text --- */}
         <div className={styles.header}>
-          <div>
-            <h1 className={styles.title}>Weekly Menu</h1>
-            <p className={styles.subtitle}>
-              Nutrition plan for the current week.
-            </p>
+          
+          {/* Left Arrow */}
+          <button 
+              onClick={() => changeWeek(-1)} 
+              style={{ background: 'rgba(255,255,255,0.2)', border: 'none', cursor: 'pointer', padding: '8px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              title="Previous Week"
+          >
+              <ChevronLeft size={28} color="white" />
+          </button>
+
+          {/* Center Info */}
+          <div style={{ textAlign: 'center', flex: 1 }}>
+            <h1 className={styles.title} style={{ marginBottom: '4px' }}>Weekly Menu</h1>
+            <span className={styles.subtitle} style={{ fontSize: '1.2rem', fontWeight: 'bold', display: 'block' }}>
+                {formatWeekRange()}
+            </span>
           </div>
 
-          {canEdit && (
-            <button onClick={() => setIsCreateOpen(true)} className={styles.createButton}>
-              <Plus size={18} /> Add New Meal
-            </button>
-          )}
+          {/* Right Arrow */}
+          <button 
+              onClick={() => changeWeek(1)} 
+              style={{ background: 'rgba(255,255,255,0.2)', border: 'none', cursor: 'pointer', padding: '8px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              title="Next Week"
+          >
+              <ChevronRight size={28} color="white" />
+          </button>
+
         </div>
+
+        {/* Add Meal Button (Outside Header or Below) */}
+        {canEdit && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '20px' }}>
+                <button onClick={() => setIsCreateOpen(true)} className={styles.createButton}>
+                <Plus size={18} /> Add New Meal
+                </button>
+            </div>
+        )}
 
         {loading ? (
           <div className={styles.loadingContainer}>
