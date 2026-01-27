@@ -71,7 +71,7 @@ const GroupsTable = () => {
 
   const getCaretakerName = (id: number) => {
     const teacher = teachers.find(t => t.id === id);
-    return teacher ? `${teacher.firstName} ${teacher.lastName}` : `ID: ${id}`;
+    return teacher ? `${teacher.firstName} ${teacher.lastName}` : `Unassigned`;
   };
 
   // Układ kolumn: ID | Nazwa | Opiekun | Akcja
@@ -82,7 +82,7 @@ const GroupsTable = () => {
       <div className={styles.header}>
         <div className={styles.headerInfo}>
           <h1 className={styles.title}>All Groups</h1>
-          <p className={styles.date}>Manage preschool groups and students</p>
+          <p className={styles.date}>Manage preschool groups and preschoolers</p>
         </div>
         <button className={styles.saveButton} onClick={() => setShowModal(true)}>
           <Plus size={18} /> New Group
