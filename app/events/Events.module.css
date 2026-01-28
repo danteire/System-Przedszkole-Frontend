@@ -543,3 +543,27 @@
   z-index: 2;
   pointer-events: none;
 }
+/* Klasa dla obrazka w małej karcie */
+.smallCardImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Przytnij, aby wypełnić obszar */
+  display: block;
+}
+
+/* Tekst placeholderu w małej karcie */
+.noImageTextSmall {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+/* Upewnij się, że kontener ma odpowiednie style (powinny już być, ale dla pewności) */
+.cardImagePlaceholder {
+  height: 140px; /* lub inna wysokość */
+  background-color: #EEE;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden; /* Ważne przy border-radius */
+}
