@@ -262,18 +262,24 @@
 }
 .teacherGridLayout {
   display: grid;
-  grid-template-columns: 50px 1fr 1fr repeat(4, 80px); /* 4 kolumny na przyciski */
+  grid-template-columns: 40px 1fr 1fr 200px 160px; 
   gap: 1rem;
   align-items: center;
   padding: 1rem;
   border-bottom: 1px solid var(--color-gray-100, #edf2f7);
 }
 
+.statusButtonGroup {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
 /* Przyciski statusu (Kwadratowe/Zaokrąglone) */
 .statusBtn {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px; /* Soft square */
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
   border: 2px solid transparent;
   background-color: var(--bg-body, #f7fafc);
   color: var(--text-muted, #a0aec0);
@@ -281,7 +287,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  transition: all 0.2s;
 }
 
 .statusBtn:hover {
@@ -290,28 +296,45 @@
 }
 
 /* Active States Colors */
-.btnPresent.active {
-  background-color: var(--color-accent-green, #48BB78);
-  color: white;
-  box-shadow: 0 4px 10px rgba(72, 187, 120, 0.4);
+.btnPresent.active { background-color: var(--color-accent-green, #48BB78); color: white; box-shadow: 0 2px 5px rgba(72, 187, 120, 0.4); }
+.btnLate.active { background-color: var(--color-primary, #ED8936); color: white; box-shadow: 0 2px 5px rgba(237, 137, 54, 0.4); }
+.btnAbsent.active { background-color: var(--color-accent-red, #F56565); color: white; box-shadow: 0 2px 5px rgba(245, 101, 101, 0.4); }
+.btnExcused.active { background-color: var(--color-accent-blue, #4299E1); color: white; box-shadow: 0 2px 5px rgba(66, 153, 225, 0.4); }
+
+.timeWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.btnLate.active {
-  background-color: var(--color-primary, #ED8936);
-  color: white;
-  box-shadow: 0 4px 10px rgba(237, 137, 54, 0.4);
+.timeInputGroup {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-body, #f7fafc);
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid transparent;
 }
 
-.btnAbsent.active {
-  background-color: var(--color-accent-red, #F56565);
-  color: white;
-  box-shadow: 0 4px 10px rgba(245, 101, 101, 0.4);
+.timeInputGroup:focus-within {
+  border-color: var(--color-primary, #ed8936);
+  background: white;
 }
 
-.btnExcused.active {
-  background-color: var(--color-accent-blue, #4299E1);
-  color: white;
-  box-shadow: 0 4px 10px rgba(66, 153, 225, 0.4);
+.timeLabelIcon {
+  color: var(--text-muted, #a0aec0);
+}
+
+.timeInput {
+  border: none;
+  background: transparent;
+  font-family: monospace;
+  font-size: 0.9rem;
+  color: var(--text-main, #2d3748);
+  outline: none;
+  width: 100%;
+  cursor: pointer;
 }
 
 /* Footer & Actions */
@@ -321,113 +344,41 @@
   justify-content: flex-end;
 }
 
-.saveButton {
-  background-color: var(--color-primary, #ed8936);
-  color: white;
-  border: none;
-  padding: 12px 32px;
-  border-radius: 9999px;
-  font-weight: 700;
-  font-size: 1rem;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  box-shadow: var(--shadow-orange, 0 4px 14px 0 rgba(237, 137, 54, 0.39));
-  transition: all 0.2s;
-}
-
-.saveButton:hover:not(:disabled) {
-  transform: translateY(-2px);
-  background-color: var(--color-primary-dark, #dd6b20);
-}
-
-.saveButton:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.historyButton {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: white;
-  border: 1px solid var(--color-gray-300, #e2e8f0);
-  padding: 8px 16px;
-  border-radius: 9999px;
-  cursor: pointer;
-  font-weight: 600;
-  color: var(--text-main);
-  transition: all 0.2s;
-}
-
-.historyButton:hover {
-  border-color: var(--color-primary);
-  color: var(--color-primary);
-}
-
-.backButton {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 1px solid var(--color-gray-300);
-  background: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--text-muted);
-  transition: all 0.2s;
-}
-
-.backButton:hover {
-  background: var(--color-primary);
-  color: white;
-  border-color: var(--color-primary);
-}
-
-/* Messages */
-.successBanner {
-  background-color: #f0fff4;
-  color: #2f855a;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
-  border: 1px solid #9ae6b4;
-  text-align: center;
-  font-weight: 600;
-  animation: fadeIn 0.3s ease-out;
-}
-
-.errorBanner {
-  background-color: #fff5f5;
-  color: #c53030;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1.5rem;
-  border: 1px solid #feb2b2;
-  text-align: center;
-  font-weight: 600;
-}
+.footer { margin-top: 2rem; display: flex; justify-content: flex-end; }
+.saveButton { background-color: var(--color-primary, #ed8936); color: white; border: none; padding: 12px 32px; border-radius: 9999px; font-weight: 700; font-size: 1rem; cursor: pointer; display: flex; align-items: center; gap: 10px; box-shadow: var(--shadow-orange); transition: all 0.2s; }
+.saveButton:hover:not(:disabled) { transform: translateY(-2px); background-color: #dd6b20; }
+.saveButton:disabled { opacity: 0.7; cursor: not-allowed; }
+.historyButton { display: flex; align-items: center; gap: 8px; background: white; border: 1px solid var(--color-gray-300); padding: 8px 16px; border-radius: 9999px; cursor: pointer; font-weight: 600; color: var(--text-main); transition: all 0.2s; }
+.historyButton:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.backButton { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--color-gray-300); background: white; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-muted); transition: all 0.2s; }
+.backButton:hover { background: var(--color-primary); color: white; border-color: var(--color-primary); }
+.successBanner { background-color: #f0fff4; color: #2f855a; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid #9ae6b4; text-align: center; font-weight: 600; animation: fadeIn 0.3s ease-out; }
+.errorBanner { background-color: #fff5f5; color: #c53030; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; border: 1px solid #feb2b2; text-align: center; font-weight: 600; }
 
 /* Responsywność dla tabeli nauczyciela */
 @media (max-width: 768px) {
   .teacherGridLayout {
-    /* Zwijamy do prostszego układu: Imię | Przyciski w nowej linii */
+    /* Zwijamy do prostszego układu na mobile */
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.5rem;
+    gap: 0.8rem;
+    padding-bottom: 1rem;
   }
   
   .teacherGridLayout > div {
-      width: 100%;
-      text-align: left;
-  }
+     width: 100%;
+    }
+
   
   /* Ukrywamy nagłówek na mobile */
-  .historyHeaderRow {
-      display: none;
+  .historyHeaderRow { display: none; }
+  
+  .statusButtonGroup { justify-content: flex-start; }
+  
+  .timeWrapper {
+    flex-direction: row;
+    flex-wrap: wrap;
   }
   
   /* Kontener na przyciski w jednym rzędzie */
