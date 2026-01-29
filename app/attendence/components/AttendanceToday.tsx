@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { api } from "~/utils/serviceAPI";
-import { ArrowLeft, Clock, RefreshCw, Save, Calendar, Check, X, Clock as ClockIcon, FileText } from "lucide-react";
-import styles from "../AttendanceView.module.css"; // Używamy tego samego pliku CSS
+import { ArrowLeft, Clock, RefreshCw, Save, Calendar, Check, X, Clock as ClockIcon, FileText, LogIn, LogOut } from "lucide-react";
+import styles from "../AttendanceView.module.css";
 import type { AttendanceRecord, Preschooler, Group } from "../attendanceTypes";
 
 interface Props {
@@ -75,19 +75,39 @@ export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Pro
     loadData();
   }, [groupId, today]);
 
+  // Funkcja zmiany statusu
   const setStatus = (preschoolerId: number, status: AttendanceRecord["status"]) => {
     setAttendance(prev => {
       const newMap = new Map(prev);
       const record = newMap.get(preschoolerId);
       if (record) {
           const updates: any = { status };
-          // Auto-fill arrival time if switching to Present/Late and it's empty
+          
+          // Automatyczne ustawienie godziny wejścia na "teraz", jeśli zmieniamy na obecny i pole jest puste
           if ((status === "PRESENT" || status === "LATE") && !record.arrivalTime) {
               updates.arrivalTime = new Date().toTimeString().split(' ')[0].substring(0, 5);
           }
+          // Czyszczenie godzin jeśli nieobecny? (Opcjonalnie, zazwyczaj lepiej zostawić puste)
+          if (status === "ABSENT" || status === "EXCUSED") {
+              updates.arrivalTime = null;
+              updates.departureTime = null;
+          }
+
           newMap.set(preschoolerId, { ...record, ...updates });
       }
       return newMap;
+    });
+  };
+
+  // Nowa funkcja: Ręczna zmiana godziny
+  const handleTimeChange = (preschoolerId: number, field: 'arrivalTime' | 'departureTime', value: string) => {
+    setAttendance(prev => {
+        const newMap = new Map(prev);
+        const record = newMap.get(preschoolerId);
+        if (record) {
+            newMap.set(preschoolerId, { ...record, [field]: value });
+        }
+        return newMap;
     });
   };
 
@@ -104,6 +124,7 @@ export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Pro
           id: record.id,
           date: today,
           status: record.status,
+          // Formatowanie czasu HH:MM -> HH:MM:00 dla backendu (LocalTime)
           arrivalTime: record.arrivalTime ? (record.arrivalTime.length === 5 ? `${record.arrivalTime}:00` : record.arrivalTime) : null,
           departureTime: record.departureTime ? (record.departureTime.length === 5 ? `${record.departureTime}:00` : record.departureTime) : null,
           preschoolerId: Number(record.preschoolerId),
@@ -120,7 +141,6 @@ export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Pro
       setSuccess(true);
       setTimeout(() => {
           setSuccess(false);
-          // Opcjonalnie: onBack(); 
       }, 2000);
     } catch (err: any) {
       console.error("Error saving attendance:", err);
@@ -158,18 +178,15 @@ export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Pro
       {error && <div className={styles.errorBanner}>{error}</div>}
       {success && <div className={styles.successBanner}>Attendance saved successfully!</div>}
 
-      <div className={styles.historySection}> {/* Używamy kontenera 'historySection' dla spójności */}
+      <div className={styles.historySection}>
         
         {/* --- GRID HEADER --- */}
-        {/* Kolumny: No | Name | Last Name | Status Buttons (4 columns) */}
         <div className={`${styles.teacherGridLayout} ${styles.historyHeaderRow}`}>
           <div>No.</div>
           <div>First Name</div>
           <div>Last Name</div>
-          <div style={{textAlign: 'center'}}>Present</div>
-          <div style={{textAlign: 'center'}}>Late</div>
-          <div style={{textAlign: 'center'}}>Absent</div>
-          <div style={{textAlign: 'center'}}>Excused</div>
+          <div style={{textAlign: 'center'}}>Status</div>
+          <div style={{paddingLeft: '5px'}}>Time (In / Out)</div>
         </div>
 
         {/* --- ROWS --- */}
@@ -177,49 +194,76 @@ export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Pro
           const record = attendance.get(child.id);
           if (!record) return null;
 
+          const isPresentOrLate = record.status === "PRESENT" || record.status === "LATE";
+
           return (
             <div key={child.id} className={`${styles.teacherGridLayout} ${styles.historyRow}`}>
               <div className={styles.cell}>{index + 1}.</div>
               <div className={styles.cell} style={{fontWeight: 600}}>{child.firstName}</div>
               <div className={styles.cell} style={{fontWeight: 600}}>{child.lastName}</div>
 
-              {/* Status Buttons */}
-              <div style={{display:'flex', justifyContent:'center'}}>
+              {/* Status Buttons Group */}
+              <div className={styles.statusButtonGroup}>
                   <button 
                     onClick={() => setStatus(child.id, "PRESENT")}
                     className={`${styles.statusBtn} ${styles.btnPresent} ${record.status === "PRESENT" ? styles.active : ''}`}
                     title="Present"
                   >
-                    <Check size={16} />
+                    <Check size={18} />
                   </button>
-              </div>
-              <div style={{display:'flex', justifyContent:'center'}}>
                   <button 
                     onClick={() => setStatus(child.id, "LATE")}
                     className={`${styles.statusBtn} ${styles.btnLate} ${record.status === "LATE" ? styles.active : ''}`}
                     title="Late"
                   >
-                    <ClockIcon size={16} />
+                    <ClockIcon size={18} />
                   </button>
-              </div>
-              <div style={{display:'flex', justifyContent:'center'}}>
                   <button 
                     onClick={() => setStatus(child.id, "ABSENT")}
                     className={`${styles.statusBtn} ${styles.btnAbsent} ${record.status === "ABSENT" ? styles.active : ''}`}
                     title="Absent"
                   >
-                    <X size={16} />
+                    <X size={18} />
                   </button>
-              </div>
-              <div style={{display:'flex', justifyContent:'center'}}>
                   <button 
                     onClick={() => setStatus(child.id, "EXCUSED")}
                     className={`${styles.statusBtn} ${styles.btnExcused} ${record.status === "EXCUSED" ? styles.active : ''}`}
                     title="Excused"
                   >
-                    <FileText size={16} />
+                    <FileText size={18} />
                   </button>
               </div>
+
+              {/* Time Inputs (Visible only if Present/Late) */}
+              <div className={styles.timeWrapper}>
+                {isPresentOrLate ? (
+                    <>
+                        <div className={styles.timeInputGroup} title="Arrival Time">
+                            <LogIn size={14} className={styles.timeLabelIcon} />
+                            <input 
+                                type="time" 
+                                className={styles.timeInput}
+                                value={record.arrivalTime || ""}
+                                onChange={(e) => handleTimeChange(child.id, 'arrivalTime', e.target.value)}
+                            />
+                        </div>
+                        <div className={styles.timeInputGroup} title="Departure Time">
+                            <LogOut size={14} className={styles.timeLabelIcon} />
+                            <input 
+                                type="time" 
+                                className={styles.timeInput}
+                                value={record.departureTime || ""}
+                                onChange={(e) => handleTimeChange(child.id, 'departureTime', e.target.value)}
+                            />
+                        </div>
+                    </>
+                ) : (
+                    <span style={{ fontSize: '0.85rem', color: '#cbd5e0', fontStyle: 'italic' }}>
+                        -
+                    </span>
+                )}
+              </div>
+
             </div>
           );
         })}

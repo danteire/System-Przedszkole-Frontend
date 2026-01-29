@@ -38,7 +38,7 @@ export const MealCard: React.FC<MealCardProps> = ({ meal, typeLabel, icon, iconC
         {icon} {typeLabel}
       </div>
       <div className={styles.mealName}>{meal.name}</div>
-      {meal.info && <div className={styles.mealInfo}>{meal.info}</div>}
+      {/* {meal.info && <div className={styles.mealInfo}>{meal.info}</div>} */}
     </div>
   );
 };
