@@ -1,16 +1,22 @@
-import { useState } from "react";
 import styles from "../Events.module.css";
 import { type AnnouncementDTO } from "../eventsTypes";
-import { SecureAnnouncementImage } from "~/utils/SecureAnnouncementImage"; // Zaimportuj komponent
+import { SecureAnnouncementImage } from "~/utils/SecureAnnouncementImage"; 
 
 interface Props {
   announcement: AnnouncementDTO;
   isActive: boolean;
   onClick: () => void;
+  // Nowe propsy
+  groupMap: Record<number, string>;
 }
 
-export default function EventSmallCard({ announcement, isActive, onClick }: Props) {
+export default function EventSmallCard({ announcement, isActive, onClick, groupMap }: Props) {
   const dateStr = new Date(announcement.publishedAt).toLocaleDateString('pl-PL');
+  
+  // Pobieranie nazwy grupy
+  const groupName = announcement.groupId 
+    ? (groupMap[announcement.groupId] || `Group #${announcement.groupId}`) 
+    : "All";
 
   return (
     <div
@@ -19,14 +25,10 @@ export default function EventSmallCard({ announcement, isActive, onClick }: Prop
     >
       <div className={styles.cardImagePlaceholder}>
         {announcement.imagePath ? (
-          // Używamy tego samego komponentu co w MainView
           <SecureAnnouncementImage 
             imagePath={announcement.imagePath} 
             alt={announcement.title}
-            // Styl inline lub klasa z CSS, by obrazek wypełniał kartę
             className={styles.smallCardImage} 
-            // Alternatywnie inline style, jeśli nie chcesz dodawać klasy do CSS:
-            // style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
           />
         ) : (
           <span className={styles.noImageTextSmall}>No Image</span>
@@ -37,7 +39,7 @@ export default function EventSmallCard({ announcement, isActive, onClick }: Prop
         <h3 className={styles.cardTitle}>{announcement.title}</h3>
         <div className={styles.cardMeta}>
           <span>{dateStr}</span>
-          <span>Group: {announcement.groupId ?? "All"}</span>
+          <span>To: <strong>{groupName}</strong></span>
         </div>
       </div>
     </div>
