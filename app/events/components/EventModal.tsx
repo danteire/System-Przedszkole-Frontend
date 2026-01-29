@@ -8,9 +8,12 @@ interface Props {
   announcement: AnnouncementDTO | null;
   isOpen: boolean;
   onClose: () => void;
+  // Nowe propsy do mapowania
+  authorMap: Record<number, string>;
+  groupMap: Record<number, string>;
 }
 
-export default function EventModal({ announcement, isOpen, onClose }: Props) {
+export default function EventModal({ announcement, isOpen, onClose, authorMap, groupMap }: Props) {
   
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -19,7 +22,7 @@ export default function EventModal({ announcement, isOpen, onClose }: Props) {
     
     if (isOpen) {
         window.addEventListener("keydown", handleEsc);
-        document.body.style.overflow = 'hidden'; // Blokada scrollowania strony
+        document.body.style.overflow = 'hidden'; 
     }
 
     return () => {
@@ -30,6 +33,12 @@ export default function EventModal({ announcement, isOpen, onClose }: Props) {
 
   if (!isOpen || !announcement) return null;
 
+  // Pobieranie czytelnych nazw
+  const authorName = authorMap[announcement.authorId] || `ID: ${announcement.authorId}`;
+  const groupName = announcement.groupId 
+    ? (groupMap[announcement.groupId] || `Group #${announcement.groupId}`) 
+    : "Everyone";
+
   return (
     <div className={styles.modalOverlay} onClick={onClose}>
       <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
@@ -38,7 +47,6 @@ export default function EventModal({ announcement, isOpen, onClose }: Props) {
           <X size={24} />
         </button>
 
-        {/* Usunąłem padding z body, żeby obrazek dotykał krawędzi */}
         <div className={styles.modalBodyNoPadding}>
           
           {/* SEKCJA ZDJĘCIA */}
@@ -47,7 +55,6 @@ export default function EventModal({ announcement, isOpen, onClose }: Props) {
                 <SecureAnnouncementImage 
                   imagePath={announcement.imagePath} 
                   alt={announcement.title}
-                  // Obrazek skaluje się do szerokości (width: 100%), wysokość auto
                   className={styles.modalImageFull}
                 />
              </div>
@@ -58,10 +65,10 @@ export default function EventModal({ announcement, isOpen, onClose }: Props) {
               <h1 className={styles.detailHeader}>{announcement.title}</h1>
               
               <div className={styles.cardMeta} style={{marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '8px', color: '#718096'}}>
-                 <Calendar size={16} />
-                 {new Date(announcement.publishedAt).toLocaleDateString('en-US', {
-                     year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                 })}
+                  <Calendar size={16} />
+                  {new Date(announcement.publishedAt).toLocaleDateString('en-US', {
+                      year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                  })}
               </div>
 
               <p className={styles.detailContent}>
@@ -70,10 +77,10 @@ export default function EventModal({ announcement, isOpen, onClose }: Props) {
 
               <div className={styles.detailFooter}>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <User size={16}/> Author ID: {announcement.authorId}
+                    <User size={16}/> Author: <strong>{authorName}</strong>
                 </span>
                 <span style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                    <Users size={16}/> Recipients: {announcement.groupId ? `Group #${announcement.groupId}` : "Everyone"}
+                    <Users size={16}/> Recipients: <strong>{groupName}</strong>
                 </span>
               </div>
           </div>

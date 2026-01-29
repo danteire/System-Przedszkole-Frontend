@@ -6,16 +6,23 @@ import EventMainView from "./components/EventDetailView";
 import EventModal from "./components/EventModal";
 import EventCreateModal from "./components/EventCreateModal";
 import { api } from "~/utils/serviceAPI";
-import DashBoard from "~/commons/dashboard";
+// import DashBoard from "~/commons/dashboard"; // Zakomentowane, jeśli używasz go w layout
 
 interface GroupSimple {
   id: number;
+  groupName: string;
   mainCaretakerId: number;
 }
 
 interface PreschoolerSimple {
   id: number;
-  groupId: number; // Upewnij się, że backend zwraca dokładnie "groupID", a nie "groupId"
+  groupId: number; 
+}
+
+interface AccountSimple {
+    id: number;
+    firstName: string;
+    lastName: string;
 }
 
 export function loader() {
@@ -33,14 +40,16 @@ export default function EventsPage() {
 
     const [userRole, setUserRole] = useState<string>("");
 
-    // --- POPRAWIONA FUNKCJA resolveUserGroupIds ---
+    // --- NOWE STANY DO MAPOWANIA ---
+    const [authorMap, setAuthorMap] = useState<Record<number, string>>({});
+    const [groupMap, setGroupMap] = useState<Record<number, string>>({});
+
     const resolveUserGroupIds = async (user: any): Promise<number[]> => {
         try {
             if (user.accountType === "TEACHER") {
                 const groups = await api.get<GroupSimple[]>("/groups");
                 if (Array.isArray(groups)) {
                     const myGroup = groups.find(g => g.mainCaretakerId === user.id);
-                    // Zwracamy ID tylko jeśli istnieje
                     return myGroup && myGroup.id ? [myGroup.id] : [];
                 }
             } else if (user.accountType === "PARENT") {
@@ -61,6 +70,36 @@ export default function EventsPage() {
         return [];
     };
 
+    // Funkcja pomocnicza do pobierania mapowań (Autorzy i Grupy)
+    const fetchMappings = async () => {
+        try {
+            // 1. Pobierz konta (dla autorów)
+            // Używamy endpointu, który zwraca listę kont (może być /accounts lub /accounts/teachers w zależności od tego kto może pisać)
+            // Tutaj zakładam /accounts, aby pokryć Adminów i Nauczycieli
+            const accounts = await api.get<AccountSimple[]>("/accounts").catch(() => []);
+            const aMap: Record<number, string> = {};
+            if (Array.isArray(accounts)) {
+                accounts.forEach(acc => {
+                    aMap[acc.id] = `${acc.firstName} ${acc.lastName}`;
+                });
+            }
+            setAuthorMap(aMap);
+
+            // 2. Pobierz grupy
+            const groups = await api.get<GroupSimple[]>("/groups").catch(() => []);
+            const gMap: Record<number, string> = {};
+            if (Array.isArray(groups)) {
+                groups.forEach(g => {
+                    gMap[g.id] = g.groupName;
+                });
+            }
+            setGroupMap(gMap);
+
+        } catch (e) {
+            console.error("Failed to load mappings:", e);
+        }
+    };
+
     const fetchData = async () => {
       setLoading(true);
       setError(null);
@@ -69,6 +108,10 @@ export default function EventsPage() {
         const user = api.getAccountInfo();
         const role = user?.accountType || "";
         setUserRole(role);
+
+        // Pobierz mapowania równolegle z ogłoszeniami (lub przed)
+        // Tutaj wywołujemy asynchronicznie, nie blokując, ale warto poczekać dla spójności
+        await fetchMappings();
 
         let finalData: AnnouncementDTO[] = [];
 
@@ -92,6 +135,7 @@ export default function EventsPage() {
                 ...(Array.isArray(allGroupsData) ? allGroupsData : [])
             ];
 
+            // Usuń duplikaty po ID
             finalData = Array.from(new Map(finalData.map(item => [item.id, item])).values());
         }
 
@@ -103,6 +147,7 @@ export default function EventsPage() {
 
       } catch (err: any) {
         console.error(err);
+        setError("Failed to load announcements.");
       } finally {
         setLoading(false);
       }
@@ -142,7 +187,7 @@ export default function EventsPage() {
                         className={styles.addButton}
                         onClick={() => setIsCreateModalOpen(true)}
                     >
-                        <span>+</span> Add Annoucement
+                        <span>+</span> Add Announcement
                     </button>
                 </div>
             )}
@@ -165,6 +210,8 @@ export default function EventsPage() {
                                     announcement={item}
                                     isActive={false} 
                                     onClick={() => handleOpenModal(item)}
+                                    // PRZEKAZANIE MAP
+                                    groupMap={groupMap}
                                 />
                             ))}
                             {leftColumnItems.length === 0 && !featuredEvent && (
@@ -177,13 +224,18 @@ export default function EventsPage() {
                           onClick={() => featuredEvent && handleOpenModal(featuredEvent)}
                           title={featuredEvent ? "Click to see details" : ""}
                         >
-                            <EventMainView announcement={featuredEvent} />
+                            <EventMainView 
+                                announcement={featuredEvent} 
+                                // PRZEKAZANIE MAP
+                                authorMap={authorMap}
+                                groupMap={groupMap}
+                            />
                         </div>
                     </div>
 
                     {bottomGridItems.length > 0 && (
                         <div className={styles.bottomSection}>
-                            <h2 className={styles.sectionTitle}>Rest of announcements</h2>
+                            <h2 className={styles.sectionTitle}>Older Announcements</h2>
                             <div className={styles.eventsGrid}>
                                 {bottomGridItems.map((item) => (
                                     <EventSmallCard 
@@ -191,6 +243,8 @@ export default function EventsPage() {
                                         announcement={item}
                                         isActive={false}
                                         onClick={() => handleOpenModal(item)}
+                                        // PRZEKAZANIE MAP
+                                        groupMap={groupMap}
                                     />
                                 ))}
                             </div>
@@ -204,6 +258,9 @@ export default function EventsPage() {
             isOpen={isModalOpen}
             announcement={selectedAnnouncement}
             onClose={handleCloseModal}
+            // PRZEKAZANIE MAP
+            authorMap={authorMap}
+            groupMap={groupMap}
           />
 
           <EventCreateModal

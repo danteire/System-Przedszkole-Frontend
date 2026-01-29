@@ -4,9 +4,12 @@ import { SecureAnnouncementImage } from "~/utils/SecureAnnouncementImage";
 
 interface Props {
   announcement: AnnouncementDTO | null;
+  // Nowe propsy
+  authorMap: Record<number, string>;
+  groupMap: Record<number, string>;
 }
 
-export default function EventMainView({ announcement }: Props) {
+export default function EventMainView({ announcement, authorMap, groupMap }: Props) {
   if (!announcement) {
     return (
       <div className={styles.mainView}>
@@ -17,15 +20,19 @@ export default function EventMainView({ announcement }: Props) {
     );
   }
 
+  // Pobieranie czytelnych nazw
+  const authorName = authorMap[announcement.authorId] || `ID: ${announcement.authorId}`;
+  const groupName = announcement.groupId 
+    ? (groupMap[announcement.groupId] || `Group #${announcement.groupId}`) 
+    : "Everyone";
+
   return (
     <div className={styles.mainView}>
-      {/* Kontener obrazka ma stałą wysokość zdefiniowaną w CSS (.detailImage) */}
       <div className={styles.detailImage}>
         {announcement.imagePath ? (
           <SecureAnnouncementImage 
             imagePath={announcement.imagePath} 
             alt={announcement.title}
-            // Klasa wymusza wypełnienie kontenera i przycięcie nadmiaru (cover)
             className={styles.mainViewImage} 
           />
         ) : (
@@ -40,9 +47,9 @@ export default function EventMainView({ announcement }: Props) {
       </p>
 
       <div className={styles.detailFooter}>
-        <span>Author ID: {announcement.authorId}</span>
+        <span>Author: <strong>{authorName}</strong></span>
         <span>
-          Recipients: {announcement.groupId ? `Group #${announcement.groupId}` : "Everyone"}
+          Recipients: <strong>{groupName}</strong>
         </span>
       </div>
     </div>
