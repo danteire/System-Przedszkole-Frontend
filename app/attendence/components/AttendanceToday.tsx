@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { api } from "~/utils/serviceAPI";
-import { ArrowLeft, Clock, RefreshCw, Save, Calendar, Check, X, Clock as ClockIcon, FileText, LogIn, LogOut } from "lucide-react";
+import { ArrowLeft, Clock, RefreshCw, Save, Calendar, Check, X, Clock as ClockIcon, FileText, LogIn, LogOut, AlertTriangle, CheckCircle } from "lucide-react";
 import styles from "../AttendanceView.module.css";
 import type { AttendanceRecord, Preschooler, Group } from "../attendanceTypes";
 
@@ -83,11 +83,10 @@ export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Pro
       if (record) {
           const updates: any = { status };
           
-          // Automatyczne ustawienie godziny wejścia na "teraz", jeśli zmieniamy na obecny i pole jest puste
           if ((status === "PRESENT" || status === "LATE") && !record.arrivalTime) {
               updates.arrivalTime = new Date().toTimeString().split(' ')[0].substring(0, 5);
           }
-          // Czyszczenie godzin jeśli nieobecny? (Opcjonalnie, zazwyczaj lepiej zostawić puste)
+          
           if (status === "ABSENT" || status === "EXCUSED") {
               updates.arrivalTime = null;
               updates.departureTime = null;
@@ -99,7 +98,7 @@ export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Pro
     });
   };
 
-  // Nowa funkcja: Ręczna zmiana godziny
+  // Ręczna zmiana godziny
   const handleTimeChange = (preschoolerId: number, field: 'arrivalTime' | 'departureTime', value: string) => {
     setAttendance(prev => {
         const newMap = new Map(prev);
@@ -115,6 +114,31 @@ export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Pro
     setSaving(true);
     setSuccess(false);
     setError(null);
+
+    // --- WALIDACJA CZASU ---
+    for (const [id, record] of attendance.entries()) {
+        const child = preschoolers.find(p => p.id === id);
+        const name = child ? `${child.firstName} ${child.lastName}` : `ID: ${id}`;
+
+        // 1. Sprawdź czy godzina wejścia jest podana dla statusu obecny/spóźniony
+        if ((record.status === "PRESENT" || record.status === "LATE") && !record.arrivalTime) {
+            setError(`Missing Arrival Time for ${name}.`);
+            setSaving(false);
+            return;
+        }
+
+        // 2. Sprawdź czy wyjście nie jest przed wejściem
+        if (record.arrivalTime && record.departureTime) {
+            const arr = record.arrivalTime.replace(':', '');
+            const dep = record.departureTime.replace(':', '');
+            if (parseInt(dep) <= parseInt(arr)) {
+                setError(`Invalid time for ${name}: Departure cannot be before or same as Arrival.`);
+                setSaving(false);
+                return;
+            }
+        }
+    }
+
     try {
       const accountInfo = api.getAccountInfo();
       const attendanceData = Array.from(attendance.values());
@@ -124,7 +148,6 @@ export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Pro
           id: record.id,
           date: today,
           status: record.status,
-          // Formatowanie czasu HH:MM -> HH:MM:00 dla backendu (LocalTime)
           arrivalTime: record.arrivalTime ? (record.arrivalTime.length === 5 ? `${record.arrivalTime}:00` : record.arrivalTime) : null,
           departureTime: record.departureTime ? (record.departureTime.length === 5 ? `${record.departureTime}:00` : record.departureTime) : null,
           preschoolerId: Number(record.preschoolerId),
@@ -140,8 +163,8 @@ export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Pro
       
       setSuccess(true);
       setTimeout(() => {
-          setSuccess(false);
-      }, 2000);
+        setSuccess(false);
+      }, 3000);
     } catch (err: any) {
       console.error("Error saving attendance:", err);
       setError("Failed to save some records. Please check connection.");
@@ -175,8 +198,19 @@ export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Pro
         </div>
       </div>
 
-      {error && <div className={styles.errorBanner}>{error}</div>}
-      {success && <div className={styles.successBanner}>Attendance saved successfully!</div>}
+      {/* --- KOMUNIKATY (BANERY ZAMIAST ALERTÓW) --- */}
+      {error && (
+          <div className={styles.errorBanner} style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
+              <AlertTriangle size={20} />
+              {error}
+          </div>
+      )}
+      {success && (
+          <div className={styles.successBanner} style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
+              <CheckCircle size={20} />
+              Attendance saved successfully!
+          </div>
+      )}
 
       <div className={styles.historySection}>
         
@@ -245,6 +279,10 @@ export default function AttendanceToday({ groupId, onBack, onHistoryClick }: Pro
                                 className={styles.timeInput}
                                 value={record.arrivalTime || ""}
                                 onChange={(e) => handleTimeChange(child.id, 'arrivalTime', e.target.value)}
+                                // Dodaję wizualne wskazanie błędu, jeśli brak czasu dla obecnego
+                                style={{ 
+                                    borderBottom: !record.arrivalTime ? '2px solid red' : 'none' 
+                                }}
                             />
                         </div>
                         <div className={styles.timeInputGroup} title="Departure Time">

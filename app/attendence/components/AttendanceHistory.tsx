@@ -1,95 +1,93 @@
-import React from "react";
-import { Calendar, Clock, RefreshCw, CalendarX } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { RefreshCw, ArrowLeft } from "lucide-react"; // Usunąłem Calendar, bo jest w kalendarzu
 import styles from "../AttendanceView.module.css";
 import type { AttendanceRecord } from "../attendanceTypes";
+import { AttendanceCalendar } from "./AttendanceCalendar";
+// Zakładam, że HistoryDetailsTable jest w tym samym folderze
+import HistoryDetailsTable from "./HistoryDetailsTable"; 
 
 interface AttendanceHistoryProps {
   history: AttendanceRecord[];
   loading: boolean;
-  onOpenExcuseModal: () => void;
+  onOpenExcuseModal: () => void; // Nauczyciel raczej tego nie używa w historii grupy, ale zachowuję interfejs
+  onBack: () => void; // Dodano onBack do powrotu do "Today"
+  groupId: number; // Potrzebne do szczegółów
 }
 
-export const AttendanceHistory: React.FC<AttendanceHistoryProps> = ({ history, loading, onOpenExcuseModal }) => {
-  return (
-    <div className={styles.historySection}>
-      
-      {/* HEADER SECTION */}
-      <div className={styles.historyHeader}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ background: '#ebf8ff', padding: '10px', borderRadius: '50%', color: '#3182ce' }}>
-             <Calendar size={24} />
-          </div>
-          <div>
-             <h3 className={styles.title} style={{ fontSize: '1.5rem', marginBottom: '2px' }}>
-                Attendance History
-             </h3>
-             <span style={{ color: '#718096', fontSize: '0.9rem' }}>Record of arrivals and departures</span>
-          </div>
-          {loading && <RefreshCw className={styles.spinner} size={20} />}
-        </div>
+export const AttendanceHistory: React.FC<AttendanceHistoryProps> = ({ history, loading, onOpenExcuseModal, onBack, groupId }) => {
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-        <button onClick={onOpenExcuseModal} className={styles.actionBtn}>
-          <CalendarX size={18} />
-          Report Absence
-        </button>
+  // 1. Grupujemy rekordy po dacie, aby kalendarz wiedział, które dni mają dane
+  // Dla nauczyciela: jeśli w danym dniu są jakiekolwiek rekordy -> zaznaczamy dzień.
+  // Możemy stworzyć sztuczne "rekordy" dla kalendarza, gdzie status = "PRESENT" oznacza "Dane istnieją".
+  const calendarData = useMemo(() => {
+    const uniqueDates = new Set(history.map(r => r.date));
+    const data: AttendanceRecord[] = [];
+    uniqueDates.forEach(date => {
+        // Tworzymy dummy record, żeby kalendarz pokazał kropkę/kolor
+        // Status 'PRESENT' użyjemy jako wskaźnik "Dzień uzupełniony"
+        data.push({ id: 0, date: date, status: 'PRESENT', preschoolerId: 0, arrivalTime: null, departureTime: null });
+    });
+    return data;
+  }, [history]);
+
+  // 2. Filtrujemy rekordy dla wybranego dnia (do szczegółów)
+  const selectedDayRecords = useMemo(() => {
+      if (!selectedDate) return [];
+      return history.filter(r => r.date === selectedDate);
+  }, [history, selectedDate]);
+
+  if (selectedDate) {
+      return (
+          <HistoryDetailsTable 
+              groupId={groupId}
+              date={selectedDate}
+              records={selectedDayRecords}
+              onBack={() => setSelectedDate(null)}
+          />
+      );
+  }
+
+  return (
+    <div className={styles.container}> {/* Używamy głównego kontenera dla spójności */}
+      
+      {/* HEADER */}
+      <div className={styles.header}>
+         <button onClick={onBack} className={styles.backButton}>
+            <ArrowLeft size={20} />
+         </button>
+         <div className={styles.headerInfo}>
+            <h1 className={styles.title}>Group History</h1>
+            <p className={styles.date}>Select a day to view details</p>
+         </div>
+         {loading && <RefreshCw className={styles.spinner} size={20} />}
       </div>
 
-      {/* GRID CONTENT */}
-      {history.length === 0 && !loading ? (
-        <div className={styles.empty}>
-           <span>No attendance records found for this child.</span>
-        </div>
-      ) : (
-        <div>
-          {/* TABLE HEADER (GRID) */}
-          <div className={`${styles.historyGridLayout} ${styles.historyHeaderRow}`}>
-            <div>Date</div>
-            <div style={{ textAlign: 'center' }}>Status</div>
-            <div style={{ textAlign: 'center' }}>Arrival</div>
-            <div style={{ textAlign: 'center' }}>Departure</div>
-          </div>
+      {/* CALENDAR */}
+      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+          <AttendanceCalendar 
+            history={calendarData} 
+            onDayClick={(record, date) => {
+                // Jeśli kliknięto w dzień (nawet pusty), sprawdzamy czy są rekordy w oryginalnej historii
+                // Ale logika calendarData zapewnia, że record != null tylko dla dni z historią.
+                // Pozwalamy kliknąć w każdy dzień? Zazwyczaj tylko w te z danymi.
+                
+                const hasData = history.some(r => r.date === date);
+                if (hasData) {
+                    setSelectedDate(date);
+                }
+            }}
+            // Dla nauczyciela nie pokazujemy przycisku "Report Absence" w tym widoku
+            onOpenExcuseModal={() => {}} 
+            // Opcjonalnie: ukryj przycisk w Calendar przez CSS lub prop (jeśli dodasz taką opcję)
+          />
+      </div>
+      
+      {/* LEGENDA / INFO */}
+      <div style={{ textAlign: 'center', marginTop: '20px', color: '#718096', fontSize: '0.9rem' }}>
+          Days highlighted in <span style={{ color: '#48BB78', fontWeight: 'bold' }}>Green</span> contain attendance records.
+      </div>
 
-          {/* TABLE ROWS (GRID) */}
-          {history.map((record) => (
-            <div key={record.id} className={`${styles.historyGridLayout} ${styles.historyRow}`}>
-              
-              {/* Date */}
-              <div className={`${styles.cell} ${styles.dateText}`}>
-                <Calendar size={16} color="#a0aec0" />
-                {record.date ? new Date(record.date).toLocaleDateString() : '-'}
-              </div>
-              
-              {/* Status Badge */}
-              <div style={{ textAlign: 'center' }}>
-                <span className={`${styles.statusBadge} ${styles['status' + record.status]}`}>
-                  {record.status}
-                </span>
-              </div>
-              
-              {/* Arrival Time */}
-              <div className={`${styles.cell} ${styles.mono}`} style={{ justifyContent: 'center' }}>
-                {record.arrivalTime ? (
-                    <>
-                        <Clock size={14} color="#cbd5e0" style={{marginRight: '4px'}}/>
-                        {record.arrivalTime}
-                    </>
-                ) : "-"}
-              </div>
-              
-              {/* Departure Time */}
-              <div className={`${styles.cell} ${styles.mono}`} style={{ justifyContent: 'center' }}>
-                 {record.departureTime ? (
-                    <>
-                        <Clock size={14} color="#cbd5e0" style={{marginRight: '4px'}}/>
-                        {record.departureTime}
-                    </>
-                ) : "-"}
-              </div>
-
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 };

@@ -1,30 +1,27 @@
-// app/routes/attendance/AttendanceView.tsx
 import { useState } from "react";
 import AttendanceToday from "./AttendanceToday";
-import HistoryDatesTable from "./HistoryDatesTable";
 import HistoryDetailsTable from "./HistoryDetailsTable";
-import type { AttendanceRecord } from "../attendanceTypes"; // Upewnij się, że ścieżka do typu jest poprawna
+import { TeacherHistoryCalendar } from "./TeacherHistoryCalendar"; // Nowy komponent kalendarza dla nauczyciela
+import type { AttendanceRecord } from "../attendanceTypes";
 
 interface AttendanceViewProps {
   groupId: number;
   onBack: () => void;
 }
 
-type ViewMode = 'today' | 'history_dates' | 'history_details';
+type ViewMode = 'today' | 'history_calendar' | 'history_details';
 
 export default function AttendanceView({ groupId, onBack }: AttendanceViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('today');
   const [selectedHistoryDate, setSelectedHistoryDate] = useState<string | null>(null);
-  const [selectedHistoryRecords, setSelectedHistoryRecords] = useState<AttendanceRecord[]>([]);
 
-  // 1. Widok Historii (Lista dat)
-  if (viewMode === 'history_dates') {
+  // 1. Widok Kalendarza Historii
+  if (viewMode === 'history_calendar') {
     return (
-        <HistoryDatesTable 
+        <TeacherHistoryCalendar 
             groupId={groupId} 
-            onSelectDate={(date, records) => {
+            onSelectDate={(date) => {
                 setSelectedHistoryDate(date);
-                setSelectedHistoryRecords(records);
                 setViewMode('history_details');
             }}
             onBack={() => setViewMode('today')}
@@ -32,22 +29,25 @@ export default function AttendanceView({ groupId, onBack }: AttendanceViewProps)
     );
   }
 
+  // 2. Widok Szczegółów Dnia
   if (viewMode === 'history_details' && selectedHistoryDate) {
       return (
           <HistoryDetailsTable 
             groupId={groupId}
             date={selectedHistoryDate}
-            records={selectedHistoryRecords} 
-            onBack={() => setViewMode('history_dates')}
+            records={[]} 
+            fetchStrategy="byDate" 
+            onBack={() => setViewMode('history_calendar')}
           />
       );
   }
 
+  // 3. Widok Główny (Dzisiaj)
   return (
     <AttendanceToday 
         groupId={groupId} 
         onBack={onBack} 
-        onHistoryClick={() => setViewMode('history_dates')}
+        onHistoryClick={() => setViewMode('history_calendar')}
     />
   );
 }
