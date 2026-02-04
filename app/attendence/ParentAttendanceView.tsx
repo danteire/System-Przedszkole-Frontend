@@ -1,13 +1,15 @@
 import { useState, useEffect } from "react";
 import { api } from "~/utils/serviceAPI";
-import { User, Users } from "lucide-react"; // Zmieniona ikona
+import { Users } from "lucide-react";
 import styles from "./AttendanceView.module.css";
 import type { Preschooler, AttendanceRecord, Group } from "./attendanceTypes";
 
 // Import komponentów
 import { ChildrenList } from "./components/ChildrenList";
-import { AttendanceHistory } from "./components/AttendanceHistory";
+// USUNIĘTO: import { AttendanceHistory } from "./components/AttendanceHistory";
 import { ExcuseAbsenceModal } from "./components/ExcuseAbsenceModal";
+import { AttendanceCalendar } from "./components/AttendanceCalendar";
+import { DayDetailsModal } from "./components/DayDetailsModal";
 
 export default function ParentAttendanceView() {
   const [children, setChildren] = useState<Preschooler[]>([]);
@@ -16,9 +18,11 @@ export default function ParentAttendanceView() {
   const [groupsMap, setGroupsMap] = useState<Map<number, string>>(new Map());
   
   const [loadingChildren, setLoadingChildren] = useState(false);
-  const [loadingHistory, setLoadingHistory] = useState(false);
+  // const [loadingHistory, setLoadingHistory] = useState(false); // Opcjonalnie, jeśli chcesz pokazać loader na kalendarzu
 
+  // Modal states
   const [isExcuseModalOpen, setIsExcuseModalOpen] = useState(false);
+  const [selectedDayRecord, setSelectedDayRecord] = useState<{record: AttendanceRecord | null, date: string} | null>(null);
 
   useEffect(() => {
     const initData = async () => {
@@ -44,7 +48,6 @@ export default function ParentAttendanceView() {
 
           setChildren(childData);
           
-          // Opcjonalnie: automatycznie wybierz pierwsze dziecko
           if (childData.length > 0) {
               setSelectedChildId(childData[0].id);
           }
@@ -62,7 +65,7 @@ export default function ParentAttendanceView() {
   const fetchHistory = async () => {
     if (!selectedChildId) return;
     
-    setLoadingHistory(true);
+    // setLoadingHistory(true);
     setAttendanceHistory([]); 
     
     try {
@@ -78,6 +81,7 @@ export default function ParentAttendanceView() {
       }
 
       if (rawData.length > 0) {
+          // Sortowanie nie jest krytyczne dla kalendarza, ale dobre dla spójności danych
           const sorted = rawData.sort((a, b) => {
               const dateA = a.date ? new Date(a.date).getTime() : 0;
               const dateB = b.date ? new Date(b.date).getTime() : 0;
@@ -91,7 +95,7 @@ export default function ParentAttendanceView() {
     } catch (error) {
       console.error("❌ Błąd pobierania historii:", error);
     } finally {
-      setLoadingHistory(false);
+      // setLoadingHistory(false);
     }
   };
 
@@ -123,14 +127,16 @@ export default function ParentAttendanceView() {
           groupsMap={groupsMap}
       />
 
+      {/* KALENDARZ (Teraz zawiera przycisk Report Absence) */}
       {selectedChildId && (
-          <AttendanceHistory 
-              history={attendanceHistory}
-              loading={loadingHistory}
-              onOpenExcuseModal={() => setIsExcuseModalOpen(true)}
-          />
+        <AttendanceCalendar 
+          history={attendanceHistory}
+          onDayClick={(record, date) => setSelectedDayRecord({ record, date })}
+          onOpenExcuseModal={() => setIsExcuseModalOpen(true)} // Przekazanie handlera
+        />
       )}
 
+      {/* MODAL ZGŁASZANIA NIEOBECNOŚCI */}
       {selectedChildId && (
         <ExcuseAbsenceModal 
             isOpen={isExcuseModalOpen}
@@ -139,6 +145,14 @@ export default function ParentAttendanceView() {
             childId={selectedChildId}
         />
       )}
+
+      {/* MODAL SZCZEGÓŁÓW DNIA */}
+      <DayDetailsModal 
+        isOpen={!!selectedDayRecord}
+        onClose={() => setSelectedDayRecord(null)}
+        date={selectedDayRecord?.date || ''}
+        record={selectedDayRecord?.record || null}
+      />
     </div>
   );
 }

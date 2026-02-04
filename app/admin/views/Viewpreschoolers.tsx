@@ -144,10 +144,9 @@ export default function ViewPreschoolers() {
       setPreschoolers(prev => prev.map(p => p.id === updatedPreschooler.id ? updatedPreschooler : p));
       
       setEditingPreschooler(null); 
-      alert("Preschooler updated successfully!");
     } catch (err: any) {
       console.error("Update failed", err);
-      alert(err.message || "Failed to update preschooler");
+      setError(err.message || "Failed to update preschooler");
     } finally {
       setIsUpdating(false);
     }
@@ -160,10 +159,9 @@ export default function ViewPreschoolers() {
     try {
       await api.delete(`/preschoolers/${id}`);
       setPreschoolers(preschoolers.filter(a => a.id !== id));
-      alert("Preschooler deleted successfully!");
     } catch (err: any) {
       console.error("❌ Failed to delete:", err);
-      alert(err.message || "Failed to delete");
+      setError(err.message || "Failed to delete");
     }
   };
 

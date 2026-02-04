@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import { X, RefreshCw, Save, AlertTriangle } from "lucide-react";
+import { X, RefreshCw, AlertTriangle, CheckCircle, AlertCircle } from "lucide-react";
 import { api } from "~/utils/serviceAPI";
-import styles from "../AttendanceView.module.css";
 import type { AttendanceRecord } from "../attendanceTypes";
 
 interface ExcuseAbsenceModalProps {
@@ -22,6 +21,10 @@ export const ExcuseAbsenceModal: React.FC<ExcuseAbsenceModalProps> = ({ isOpen, 
   const [conflicts, setConflicts] = useState<AttendanceRecord[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
 
+  // --- NEW: Error and Success States ---
+  const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
   if (!isOpen) return null;
 
   const getDatesInRange = (startDate: string, endDate: string) => {
@@ -35,12 +38,13 @@ export const ExcuseAbsenceModal: React.FC<ExcuseAbsenceModalProps> = ({ isOpen, 
     return dates;
   };
 
-  // Krok 1: Sprawdź konflikty
   const handleCheckAndSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!childId) return;
     
-    // Resetuj stan konfliktów
+    // Reset messages
+    setError(null);
+    setSuccessMsg(null);
     setConflicts([]);
     setShowConfirm(false);
 
@@ -49,11 +53,11 @@ export const ExcuseAbsenceModal: React.FC<ExcuseAbsenceModalProps> = ({ isOpen, 
         targetDates = [excuseDate];
     } else {
         if (!excuseStartDate || !excuseEndDate) {
-            alert("Please select both start and end dates.");
+            setError("Please select both start and end dates.");
             return;
         }
         if (new Date(excuseStartDate) > new Date(excuseEndDate)) {
-            alert("Start date cannot be after end date.");
+            setError("Start date cannot be after end date.");
             return;
         }
         targetDates = getDatesInRange(excuseStartDate, excuseEndDate);
@@ -62,42 +66,37 @@ export const ExcuseAbsenceModal: React.FC<ExcuseAbsenceModalProps> = ({ isOpen, 
     setChecking(true);
 
     try {
-        // Pobierz aktualną historię dziecka, żeby sprawdzić konflikty
-        // 
         const history = await api.get<AttendanceRecord[]>(`/attendance/preschooler/${childId}`);
         const existingRecords = Array.isArray(history) ? history : [];
 
-        // Znajdź rekordy, które pokrywają się z wybranymi datami
         const foundConflicts = existingRecords.filter(r => r.date && targetDates.includes(r.date));
 
         if (foundConflicts.length > 0) {
             setConflicts(foundConflicts);
-            setShowConfirm(true); // Pokaż widok potwierdzenia
+            setShowConfirm(true);
         } else {
-            // Brak konfliktów - wyślij od razu
             await executeSubmission(targetDates, []);
         }
 
     } catch (error) {
         console.error("Error checking attendance:", error);
-        alert("Failed to check existing attendance records.");
+        setError("Failed to check existing attendance records.");
     } finally {
         setChecking(false);
     }
   };
 
-  // Krok 2: Wykonaj zapis (POST lub PUT)
   const executeSubmission = async (dates: string[], existingRecords: AttendanceRecord[]) => {
     setSubmitting(true);
+    setError(null); // Clear previous errors
     try {
         const accountInfo = api.getAccountInfo();
         
         await Promise.all(dates.map(async (date) => {
-            // Sprawdź czy dla tej daty istnieje już rekord (w pobranych wcześniej danych)
             const existingRecord = existingRecords.find(r => r.date === date);
 
             const payload = {
-                id: existingRecord?.id, // ID potrzebne do PUT
+                id: existingRecord?.id,
                 date: date,
                 status: "EXCUSED",
                 arrivalTime: null,
@@ -107,20 +106,26 @@ export const ExcuseAbsenceModal: React.FC<ExcuseAbsenceModalProps> = ({ isOpen, 
             };
 
             if (existingRecord?.id) {
-                // PUT - Aktualizacja istniejącego rekordu
                 await api.put(`/attendance/${existingRecord.id}`, payload);
             } else {
-                // POST - Nowy rekord
                 await api.post("/attendance", payload);
             }
         }));
 
-        alert("Absence reported successfully.");
-        onSuccess();
-        onClose();
+        setSuccessMsg("Absence reported successfully.");
+        
+        // Wait a moment before closing to show success message
+        setTimeout(() => {
+            onSuccess();
+            onClose();
+            // Reset state for next open
+            setSuccessMsg(null);
+            setShowConfirm(false);
+        }, 1500);
+
     } catch (error) {
         console.error("Failed to submit excuse:", error);
-        alert("Failed to save absence. Please try again.");
+        setError("Failed to save absence. Please try again.");
     } finally {
         setSubmitting(false);
     }
@@ -129,33 +134,58 @@ export const ExcuseAbsenceModal: React.FC<ExcuseAbsenceModalProps> = ({ isOpen, 
   return (
     <div style={{
         position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, 
-        backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000
+        backgroundColor: 'rgba(37, 38, 65, 0.6)', backdropFilter: 'blur(4px)',
+        display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 9999
     }}>
         <div style={{
-            backgroundColor: 'white', padding: '24px', borderRadius: '12px', width: '450px',
-            boxShadow: '0 4px 15px rgba(0,0,0,0.1)', maxHeight: '90vh', overflowY: 'auto'
+            backgroundColor: 'white', padding: '24px', borderRadius: '20px', width: '90%', maxWidth: '450px',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', maxHeight: '90vh', overflowY: 'auto'
         }}>
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
-                <h3 style={{margin: 0, fontSize: '1.25rem', fontWeight: 700, color: '#2d3748'}}>
+            
+            {/* Header */}
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', paddingBottom: '10px', borderBottom: '1px solid #e2e8f0'}}>
+                <h3 style={{margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#2d3748'}}>
                    Report Absence
                 </h3>
-                <button onClick={onClose} style={{border: 'none', background: 'none', cursor: 'pointer', color: '#a0aec0'}}>
-                    <X size={24} />
+                <button onClick={onClose} style={{border: 'none', background: '#f7fafc', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#718096'}}>
+                    <X size={20} />
                 </button>
             </div>
+
+            {/* ERROR MESSAGE BANNER */}
+            {error && (
+                <div style={{
+                    backgroundColor: '#FFF5F5', border: '1px solid #FEB2B2', borderRadius: '8px', 
+                    padding: '12px', marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center', color: '#C53030'
+                }}>
+                    <AlertCircle size={20} />
+                    <span style={{fontSize: '0.9rem', fontWeight: 600}}>{error}</span>
+                </div>
+            )}
+
+            {/* SUCCESS MESSAGE BANNER */}
+            {successMsg && (
+                <div style={{
+                    backgroundColor: '#F0FFF4', border: '1px solid #9AE6B4', borderRadius: '8px', 
+                    padding: '12px', marginBottom: '20px', display: 'flex', gap: '10px', alignItems: 'center', color: '#2F855A'
+                }}>
+                    <CheckCircle size={20} />
+                    <span style={{fontSize: '0.9rem', fontWeight: 600}}>{successMsg}</span>
+                </div>
+            )}
 
             {!showConfirm ? (
                 // --- FORMULARZ WYBORU DAT ---
                 <form onSubmit={handleCheckAndSubmit}>
-                    <div style={{display: 'flex', gap: '10px', marginBottom: '20px', background: '#f7fafc', padding: '4px', borderRadius: '8px'}}>
+                    <div style={{display: 'flex', gap: '5px', marginBottom: '20px', background: '#EDF2F7', padding: '4px', borderRadius: '10px'}}>
                         <button
                             type="button"
                             onClick={() => setExcuseMode("SINGLE")}
                             style={{
-                                flex: 1, padding: '8px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: 600,
+                                flex: 1, padding: '8px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.9rem', transition: 'all 0.2s',
                                 backgroundColor: excuseMode === "SINGLE" ? 'white' : 'transparent',
-                                color: excuseMode === "SINGLE" ? '#3182ce' : '#718096',
-                                boxShadow: excuseMode === "SINGLE" ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                                color: excuseMode === "SINGLE" ? 'var(--color-primary, #ED8936)' : '#718096',
+                                boxShadow: excuseMode === "SINGLE" ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'
                             }}
                         >
                             Single Day
@@ -164,47 +194,47 @@ export const ExcuseAbsenceModal: React.FC<ExcuseAbsenceModalProps> = ({ isOpen, 
                             type="button"
                             onClick={() => setExcuseMode("RANGE")}
                             style={{
-                                flex: 1, padding: '8px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontWeight: 600,
+                                flex: 1, padding: '8px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: '0.9rem', transition: 'all 0.2s',
                                 backgroundColor: excuseMode === "RANGE" ? 'white' : 'transparent',
-                                color: excuseMode === "RANGE" ? '#3182ce' : '#718096',
-                                boxShadow: excuseMode === "RANGE" ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                                color: excuseMode === "RANGE" ? 'var(--color-primary, #ED8936)' : '#718096',
+                                boxShadow: excuseMode === "RANGE" ? '0 2px 4px rgba(0,0,0,0.05)' : 'none'
                             }}
                         >
                             Date Range
                         </button>
                     </div>
 
-                    <div style={{ marginBottom: '20px' }}>
+                    <div style={{ marginBottom: '25px' }}>
                         {excuseMode === "SINGLE" ? (
                             <div>
-                                <label style={{display: 'block', marginBottom: '6px', fontWeight: 600, color: '#4a5568', fontSize: '0.9rem'}}>Date</label>
+                                <label style={{display: 'block', marginBottom: '8px', fontWeight: 700, color: '#4a5568', fontSize: '0.9rem'}}>Date</label>
                                 <input 
                                     type="date" 
                                     value={excuseDate}
                                     onChange={(e) => setExcuseDate(e.target.value)}
-                                    style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0'}}
+                                    style={{width: '100%', padding: '12px', borderRadius: '8px', border: '2px solid #e2e8f0', fontSize: '1rem', outline: 'none', color: '#2D3748'}}
                                     required
                                 />
                             </div>
                         ) : (
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
                                 <div>
-                                    <label style={{display: 'block', marginBottom: '6px', fontWeight: 600, color: '#4a5568', fontSize: '0.9rem'}}>From</label>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 700, color: '#4a5568', fontSize: '0.9rem'}}>From</label>
                                     <input 
                                         type="date" 
                                         value={excuseStartDate}
                                         onChange={(e) => setExcuseStartDate(e.target.value)}
-                                        style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0'}}
+                                        style={{width: '100%', padding: '12px', borderRadius: '8px', border: '2px solid #e2e8f0', fontSize: '0.9rem', outline: 'none', color: '#2D3748'}}
                                         required
                                     />
                                 </div>
                                 <div>
-                                    <label style={{display: 'block', marginBottom: '6px', fontWeight: 600, color: '#4a5568', fontSize: '0.9rem'}}>To</label>
+                                    <label style={{display: 'block', marginBottom: '8px', fontWeight: 700, color: '#4a5568', fontSize: '0.9rem'}}>To</label>
                                     <input 
                                         type="date" 
                                         value={excuseEndDate}
                                         onChange={(e) => setExcuseEndDate(e.target.value)}
-                                        style={{width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #e2e8f0'}}
+                                        style={{width: '100%', padding: '12px', borderRadius: '8px', border: '2px solid #e2e8f0', fontSize: '0.9rem', outline: 'none', color: '#2D3748'}}
                                         required
                                     />
                                 </div>
@@ -216,18 +246,19 @@ export const ExcuseAbsenceModal: React.FC<ExcuseAbsenceModalProps> = ({ isOpen, 
                         <button 
                             type="button" 
                             onClick={onClose}
-                            style={{ padding: '10px 20px', border: 'none', borderRadius: '6px', background: 'transparent', color: '#718096', fontWeight: 600, cursor: 'pointer' }}
-                            disabled={checking}
+                            style={{ padding: '10px 20px', border: 'none', borderRadius: '99px', background: 'transparent', color: '#718096', fontWeight: 700, cursor: 'pointer' }}
+                            disabled={checking || submitting}
                         >
                             Cancel
                         </button>
                         <button 
                             type="submit" 
                             style={{
-                                padding: '10px 20px', border: 'none', borderRadius: '6px', background: '#3182ce', 
-                                color: 'white', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px'
+                                padding: '10px 24px', border: 'none', borderRadius: '99px', background: 'var(--color-primary, #ED8936)', 
+                                color: 'white', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+                                boxShadow: '0 4px 6px rgba(237, 137, 54, 0.2)'
                             }}
-                            disabled={checking}
+                            disabled={checking || submitting}
                         >
                             {checking ? <RefreshCw size={18} className="animate-spin" /> : "Check & Submit"}
                         </button>
@@ -235,19 +266,19 @@ export const ExcuseAbsenceModal: React.FC<ExcuseAbsenceModalProps> = ({ isOpen, 
                 </form>
             ) : (
                 // --- EKRAN POTWIERDZENIA KONFLIKTÓW ---
-                <div>
-                    <div style={{backgroundColor: '#fffaf0', border: '1px solid #fbd38d', padding: '15px', borderRadius: '8px', marginBottom: '20px'}}>
-                        <div style={{display: 'flex', gap: '10px', alignItems: 'center', color: '#c05621', fontWeight: 'bold', marginBottom: '10px'}}>
+                <div className="animate-fade-in">
+                    <div style={{backgroundColor: '#FFF5F5', border: '1px solid #FED7D7', padding: '16px', borderRadius: '12px', marginBottom: '24px'}}>
+                        <div style={{display: 'flex', gap: '10px', alignItems: 'center', color: '#C53030', fontWeight: '800', marginBottom: '8px'}}>
                             <AlertTriangle size={24} />
-                            Attention: Existing Records Found
+                            Attention
                         </div>
-                        <p style={{margin: 0, color: '#744210', fontSize: '0.9rem'}}>
-                            The following dates already have an attendance status. Proceeding will overwrite them with "EXCUSED".
+                        <p style={{margin: 0, color: '#742A2A', fontSize: '0.95rem', lineHeight: '1.5'}}>
+                            The following dates already have an attendance status. Proceeding will <strong style={{textDecoration: 'underline'}}>overwrite</strong> them with "EXCUSED".
                         </p>
-                        <ul style={{marginTop: '10px', paddingLeft: '20px', color: '#744210'}}>
+                        <ul style={{marginTop: '12px', paddingLeft: '20px', color: '#742A2A', fontSize: '0.9rem'}}>
                             {conflicts.map(c => (
-                                <li key={c.id}>
-                                    <strong>{c.date}</strong>: Current status is <span style={{fontWeight: 'bold'}}>{c.status}</span>
+                                <li key={c.id} style={{marginBottom: '4px'}}>
+                                    <strong>{c.date}</strong>: Currently <span style={{fontWeight: 'bold', background: 'white', padding: '2px 6px', borderRadius: '4px', fontSize: '0.8rem', border: '1px solid #fc8181'}}>{c.status}</span>
                                 </li>
                             ))}
                         </ul>
@@ -257,7 +288,7 @@ export const ExcuseAbsenceModal: React.FC<ExcuseAbsenceModalProps> = ({ isOpen, 
                         <button 
                             type="button" 
                             onClick={() => setShowConfirm(false)}
-                            style={{ padding: '10px 20px', border: 'none', borderRadius: '6px', background: '#edf2f7', color: '#4a5568', fontWeight: 600, cursor: 'pointer' }}
+                            style={{ padding: '10px 20px', border: 'none', borderRadius: '99px', background: '#EDF2F7', color: '#4A5568', fontWeight: 700, cursor: 'pointer' }}
                             disabled={submitting}
                         >
                             Back
@@ -265,13 +296,13 @@ export const ExcuseAbsenceModal: React.FC<ExcuseAbsenceModalProps> = ({ isOpen, 
                         <button 
                             type="button" 
                             onClick={() => {
-                                // Wywołujemy zapis, przekazując listę dat (z formularza) i listę konfliktów (by wiedzieć, które to PUT)
                                 let targetDates = excuseMode === "SINGLE" ? [excuseDate] : getDatesInRange(excuseStartDate, excuseEndDate);
                                 executeSubmission(targetDates, conflicts);
                             }}
                             style={{
-                                padding: '10px 20px', border: 'none', borderRadius: '6px', background: '#e53e3e', 
-                                color: 'white', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px'
+                                padding: '10px 24px', border: 'none', borderRadius: '99px', background: '#E53E3E', 
+                                color: 'white', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px',
+                                boxShadow: '0 4px 6px rgba(229, 62, 62, 0.3)'
                             }}
                             disabled={submitting}
                         >

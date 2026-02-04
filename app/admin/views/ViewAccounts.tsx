@@ -19,6 +19,9 @@ interface EditAccountData {
 }
 
 export default function ViewAccounts() {
+
+  const isAdmin = api.isAdmin();
+
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,12 +73,16 @@ export default function ViewAccounts() {
     if (!confirm(`Are you sure you want to delete ${name}?`)) {
       return;
     }
+    const delAcc = accounts.find((acc) => acc.id === id);
+    if((delAcc?.accountType === "ADMIN" || delAcc?.accountType === "TEACHER") && !isAdmin){
+      setError("Access denied. Cannot delete this account");
+      return;
+    } 
     try {
       await api.delete(`/accounts/${id}`);
       setAccounts(accounts.filter(a => a.id !== id));
-      alert("Account deleted successfully!");
     } catch (err: any) {
-      alert(err.message || "Failed to delete account");
+      setError(err.message || "Failed to delete account");
     }
   };
 
@@ -108,10 +115,9 @@ export default function ViewAccounts() {
       setAccounts(prev => prev.map(acc => acc.id === updatedAccount.id ? updatedAccount : acc));
       
       setEditingAccount(null); // Close modal
-      alert("Account updated successfully!");
     } catch (err: any) {
       console.error("Update failed", err);
-      alert(err.message || "Failed to update account");
+      setError(err.message || "Failed to update account");
     } finally {
       setIsUpdating(false);
     }
