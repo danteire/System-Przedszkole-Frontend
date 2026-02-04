@@ -19,6 +19,9 @@ interface EditAccountData {
 }
 
 export default function ViewAccounts() {
+
+  const isAdmin = api.isAdmin();
+
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +73,11 @@ export default function ViewAccounts() {
     if (!confirm(`Are you sure you want to delete ${name}?`)) {
       return;
     }
+    const delAcc = accounts.find((acc) => acc.id === id);
+    if((delAcc?.accountType === "ADMIN" || delAcc?.accountType === "TEACHER") && !isAdmin){
+      setError("Access denied. Cannot delete this account");
+      return;
+    } 
     try {
       await api.delete(`/accounts/${id}`);
       setAccounts(accounts.filter(a => a.id !== id));

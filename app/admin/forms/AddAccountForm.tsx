@@ -145,14 +145,27 @@ export default function AddAccountForm({ onSuccess }: AddAccountFormProps) {
       const endpoint = endpointMap[formData.accountType as AccountType];
       
       console.log(`📤 Sending POST to /accounts (Type: ${formData.accountType})`);
+      
+      let response: unknown;
 
-      const response = await api.post(`/accounts`, {
-        email: formData.email.trim(),
-        password: formData.password,
-        firstName: formData.firstName.trim(),
-        lastName: formData.lastName.trim(),
-        accountType: formData.accountType,
-      });
+      if(isAdmin){
+        response = await api.post(`/accounts`, {
+          email: formData.email.trim(),
+          password: formData.password,
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+          accountType: formData.accountType,
+        });
+      }else{
+        response = await api.post(`/accounts/parent`, {
+          email: formData.email.trim(),
+          password: formData.password,
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
+        });
+      }
+
+
 
       console.log("✅ Account created successfully:", response);
 
