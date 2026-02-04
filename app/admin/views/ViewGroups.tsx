@@ -112,11 +112,9 @@ export default function ViewGroups() {
       setGroups(prev => prev.map(g => g.id === updatedGroup.id ? updatedGroup : g));
       
       setEditingGroup(null); 
-      alert("Group updated successfully!");
-
     } catch (err: any) {
       console.error("Update failed", err);
-      alert(err.message || "Failed to update group");
+      setError(err.message || "Failed to update group");
     } finally {
       setIsUpdating(false);
     }
@@ -129,10 +127,9 @@ export default function ViewGroups() {
     try {
       await api.delete(`/groups/${id}`);
       setGroups(groups.filter(a => a.id !== id));
-      alert("Group deleted successfully!");
     } catch (err: any) {
       console.error("❌ Failed to delete group:", err);
-      alert(err.message || "Failed to delete group");
+      setError(err.message || "Failed to delete group");
     }
   };
 

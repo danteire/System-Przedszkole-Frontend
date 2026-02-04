@@ -81,9 +81,8 @@ export default function ViewAccounts() {
     try {
       await api.delete(`/accounts/${id}`);
       setAccounts(accounts.filter(a => a.id !== id));
-      alert("Account deleted successfully!");
     } catch (err: any) {
-      alert(err.message || "Failed to delete account");
+      setError(err.message || "Failed to delete account");
     }
   };
 
@@ -116,10 +115,9 @@ export default function ViewAccounts() {
       setAccounts(prev => prev.map(acc => acc.id === updatedAccount.id ? updatedAccount : acc));
       
       setEditingAccount(null); // Close modal
-      alert("Account updated successfully!");
     } catch (err: any) {
       console.error("Update failed", err);
-      alert(err.message || "Failed to update account");
+      setError(err.message || "Failed to update account");
     } finally {
       setIsUpdating(false);
     }
